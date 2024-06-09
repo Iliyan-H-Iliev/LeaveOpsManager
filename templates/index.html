@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+    {% if user.is_authenticated %}
+        <h2>Профил</h2>
+        <p>Добре дошли, {{ user.user_type }}</p>
+        <p>Имейл: {{ user.email }}</p>
+        <p>Company name: {{ user.company.company_name }}</p>
+        <p>Дата на регистрация: {{ user.first_name }}</p>
+        <p>Последна активност: {{ user.last_name }}</p>
+    {% else %}
+        <h2>Профил</h2>
+        <p>Моля, влезте в профила си</p>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,7 @@
+{% load filters %}
+<form action="{% url 'signin user' %}?next={{ next }}" method="post">
+                {{ form.as_p }}
+                <button type="submit">Log in</button>
+
+                {% csrf_token %}
+            </form>

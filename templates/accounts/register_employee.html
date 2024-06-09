@@ -1,0 +1,13 @@
+{% load filters %}
+<form action="{% url 'register employee' %}?next={{ next }}" method="post">
+{#                <p>#}
+{#                    {{ form.username|placeholder:"Email" }}#}
+{#                </p>#}
+{#                <p>#}
+{#                    {{ form.password|placeholder:"Password" }}#}
+{#                </p>#}
+    {{ form.as_p }}
+                <button type="submit">Log in</button>
+
+                {% csrf_token %}
+            </form>
