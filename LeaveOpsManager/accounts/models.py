@@ -1,6 +1,8 @@
 from django.contrib.auth.models import Group, Permission
 from django.core.validators import MinLengthValidator
 from django.db import models
+from django.utils.crypto import get_random_string
+from django.utils.text import slugify
 
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import models as auth_models
@@ -14,6 +16,17 @@ from LeaveOpsManager.accounts.mixins import UserTypeMixin
 
 
 class LeaveOpsManagerUser(auth_models.AbstractBaseUser, auth_models.PermissionsMixin):
+
+    MAX_USER_TYPE_LENGTH = 20
+    MAX_SLUG_LENGTH = 100
+
+    CHOICES_USER_TYPE = (
+        ('Company', 'Company'),
+        ('HR', 'HR'),
+        ('Manager', 'Manager'),
+        ('Employee', 'Employee'),
+    )
+
     groups = models.ManyToManyField(
         Group,
         verbose_name=_('groups'),
@@ -53,20 +66,38 @@ class LeaveOpsManagerUser(auth_models.AbstractBaseUser, auth_models.PermissionsM
         default=True,
     )
 
-    def get_slug(self):
-        if self.user_company.first():
-            return self.user_company.first().slug
-        if self.hrs.first():
-            return self.hrs.first().slug
-        if self.managers.first():
-            return self.managers.first().slug
-        if self.employees.first():
-            return self.employees.slug
-        return None
+    user_type = models.CharField(
+        max_length=MAX_USER_TYPE_LENGTH,
+        choices=CHOICES_USER_TYPE,
+        default='Employee',
+        Blank=False,
+        null=False,
+    )
 
-    @property
-    def slug(self):
-        return self.get_slug()
+    # TODO add user_type to the registration form and update the view to save the user_type
+
+    slug = models.SlugField(
+        max_length=MAX_SLUG_LENGTH,
+        unique=True,
+        null=False,
+        blank=True,
+        editable=False,
+    )
+
+    # def get_slug(self):
+    #     if self.company.first():
+    #         return self.company.first().slug
+    #     if self.hr.first():
+    #         return self.hr.first().slug
+    #     if self.manager.first():
+    #         return self.manager.first().slug
+    #     if self.employee.first():
+    #         return self.employee.slug
+    #     return None
+    #
+    # @property
+    # def slug(self):
+    #     return self.get_slug()
 
     USERNAME_FIELD = "email"
 
@@ -81,7 +112,7 @@ class Meta:
 class Company(UserTypeMixin, models.Model):
     MAX_COMPANY_NAME_LENGTH = 50
     MIN_COMPANY_NAME_LENGTH = 3
-    MAX_SLUG_LENGTH = 100
+    # MAX_SLUG_LENGTH = 100
 
     # TODO Add company name to registration form and update the view to save the company name
 
@@ -104,31 +135,31 @@ class Company(UserTypeMixin, models.Model):
         blank=False,
     )
 
-    user = models.ForeignKey(
+    user = models.OneToOneField(
         LeaveOpsManagerUser,
         on_delete=models.CASCADE,
-        related_name="user_company",
+        related_name="type",
     )
 
-    slug = models.SlugField(
-        max_length=MAX_SLUG_LENGTH,
-        unique=True,
-        null=False,
-        blank=True,
-        editable=False,
-    )
+    # slug = models.SlugField(
+    #     max_length=MAX_SLUG_LENGTH,
+    #     unique=True,
+    #     null=False,
+    #     blank=True,
+    #     editable=False,
+    # )
 
     group = models.ForeignKey(
         Group,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="company_group",
+        related_name="group",
     )
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-
+        #TODO add slug generation
         # Get or create the 'Company' group
         company_group, created = Group.objects.get_or_create(name='Company')
 
@@ -156,19 +187,19 @@ class Manager(EmployeeProfileBase):
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        related_name='manage_managers',
+        related_name='manages_managers',
     )
 
     company = models.ForeignKey(
         Company,
         on_delete=models.CASCADE,
-        related_name="manager_company",
+        related_name="managers",
     )
 
-    user = models.ForeignKey(
+    user = models.OneToOneField(
         LeaveOpsManagerUser,
         on_delete=models.CASCADE,
-        related_name="managers",
+        related_name="type",
     )
 
     # TODO NULL TRUE BLANK TRUE
@@ -184,12 +215,12 @@ class Manager(EmployeeProfileBase):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="manager_group",
+        related_name="group",
     )
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-
+        # TODO add slug generation
         # Get or create the 'Company' group
         manager_group, created = Group.objects.get_or_create(name='Manager')
 
@@ -209,13 +240,13 @@ class HR(EmployeeProfileBase):
     company = models.ForeignKey(
         Company,
         on_delete=models.CASCADE,
-        related_name="hr_company",
+        related_name="hr",
     )
 
-    user = models.ForeignKey(
+    user = models.OneToOneField(
         LeaveOpsManagerUser,
         on_delete=models.CASCADE,
-        related_name="hrs",
+        related_name="type",
     )
 
     group = models.ForeignKey(
@@ -223,12 +254,12 @@ class HR(EmployeeProfileBase):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="hr_group",
+        related_name="group",
     )
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-
+        # TODO add slug generation
         # Get or create the 'Company' group
         hr_group, created = Group.objects.get_or_create(name='HR')
 
@@ -242,19 +273,19 @@ class Employee(EmployeeProfileBase):
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        related_name="manage_employees",
+        related_name="manages_employees",
     )
 
     company = models.ForeignKey(
         Company,
         on_delete=models.CASCADE,
-        related_name="employee_company",
+        related_name="employee",
     )
 
     user = models.ForeignKey(
         LeaveOpsManagerUser,
         on_delete=models.CASCADE,
-        related_name="employees",
+        related_name="type",
     )
 
     group = models.ForeignKey(
@@ -267,30 +298,30 @@ class Employee(EmployeeProfileBase):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-
+        # TODO add slug generation
         # Get or create the 'Company' group
         employee_group, created = Group.objects.get_or_create(name='Employee')
 
         # Add the user to the 'Company' group
         self.user.groups.add(employee_group)
 
-    def promote_to_manager(self):
-        # Create a new Manager instance with the same attributes as the employee
-        manager = Manager.objects.create(
-            first_name=self.first_name,
-            last_name=self.last_name,
-            employee_id=self.employee_id,
-            date_of_hire=self.date_of_hire,
-            days_off_left=self.days_off_left,
-            phone_number=self.phone_number,
-            address=self.address,
-            date_of_birth=self.date_of_birth,
-            profile_picture=self.profile_picture,
-            user=self.user,
-            company=self.company,
-        )
-
-        # Delete the Employee instance
-        self.delete()
-
-        return manager
+    # def promote_to_manager(self):
+    #     # Create a new Manager instance with the same attributes as the employee
+    #     manager = Manager.objects.create(
+    #         first_name=self.first_name,
+    #         last_name=self.last_name,
+    #         employee_id=self.employee_id,
+    #         date_of_hire=self.date_of_hire,
+    #         days_off_left=self.days_off_left,
+    #         phone_number=self.phone_number,
+    #         address=self.address,
+    #         date_of_birth=self.date_of_birth,
+    #         profile_picture=self.profile_picture,
+    #         user=self.user,
+    #         company=self.company,
+    #     )
+    #
+    #     # Delete the Employee instance
+    #     self.delete()
+    #
+    #     return manager
