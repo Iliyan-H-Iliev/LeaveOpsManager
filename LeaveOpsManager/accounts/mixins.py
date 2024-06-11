@@ -29,16 +29,16 @@ class AbstractSlugMixin(models.Model):
         editable=False,
     )
 
-    # def save(self, *args, **kwargs):
-    #     super().save(*args, **kwargs)
-    #
-    #     if not self.slug:
-    #         self.slug = slugify(f"{self.__class__.__name__}-{self.get_slug_identifier()}")
-    #
-    #     super().save(*args, **kwargs)
-    #
-    # def get_slug_identifier(self):
-    #     raise NotImplementedError("Subclasses must implement this method")
+    def save(self, *args, **kwargs):
+        # super().save(*args, **kwargs)
+
+        if not self.slug:
+            self.slug = slugify(f"{self.get_slug_identifier()}")
+
+        super().save(*args, **kwargs)
+
+    def get_slug_identifier(self):
+        raise NotImplementedError("Subclasses must implement this method")
 
 
 # class OwnerRequiredMixin(AccessMixin):

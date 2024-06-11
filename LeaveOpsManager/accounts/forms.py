@@ -36,7 +36,7 @@ class SignupCompanyForm(UserCreationForm):
         company = Company.objects.create(
             company_name=self.cleaned_data["company_name"],
             user=user,
-            slug=slug,
+            # slug=slug,
         )
 
         user.company = company

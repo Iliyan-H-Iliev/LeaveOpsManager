@@ -124,7 +124,7 @@ class LeaveOpsManagerUser(auth_models.AbstractBaseUser, auth_models.PermissionsM
         verbose_name_plural = 'users'
 
 
-class Company(UserTypeMixin, AbstractSlugMixin, AddToGroupMixin, models.Model):
+class Company(UserTypeMixin, AddToGroupMixin, AbstractSlugMixin,  models.Model):
     MAX_COMPANY_NAME_LENGTH = 50
     MIN_COMPANY_NAME_LENGTH = 3
     DEFAULT_DAYS_OFF_PER_YEAR = 0
@@ -185,8 +185,8 @@ class Company(UserTypeMixin, AbstractSlugMixin, AddToGroupMixin, models.Model):
         # from .models import Employee
         return Employee.objects.filter(company=self)
 
-    def __str__(self):
-        return self.company_name
+    # def __str__(self):
+    #     return self.company_name
 
 
 class Manager(EmployeeProfileBase):
