@@ -52,6 +52,9 @@ class RegistrationCompanyView(UserPassesTestMixin, views.CreateView):
             return redirect(self.get_success_url())
         return super().dispatch(request, *args, **kwargs)
 
+    def test_func(self):
+        return not self.request.user.is_authenticated
+
 
 class RegistrationEmployeeView(views.CreateView):
     template_name = 'accounts/register_employee.html'
@@ -145,10 +148,10 @@ class ProfileDetailsView(views.DetailView):
         company = None
 
         company = (
-                user_profile.company.first() or
-                (user_profile.hr.first() and user_profile.hr.first().company) or
-                (user_profile.manager.first() and user_profile.manager.first().company) or
-                (user_profile.employee.first() and user_profile.employee.first().company)
+                user_profile.company or
+                (user_profile.hr and user_profile.hr.company) or
+                (user_profile.manager and user_profile.manager.company) or
+                (user_profile.employee and user_profile.employee.company)
         )
 
         # Only attempt to get related instances if the company exists

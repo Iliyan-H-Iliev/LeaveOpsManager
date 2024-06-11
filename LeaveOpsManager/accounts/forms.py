@@ -12,12 +12,6 @@ from .models import EmployeeProfileBase, Company, Manager, HR, Employee
 
 UserModel = get_user_model()
 
-USER_ROLES = (
-    ("Employee", "Employee"),
-    ("Manager", "Manager"),
-    ("HR", "HR"),
-)
-
 
 class SignupCompanyForm(UserCreationForm):
     company_name = forms.CharField(
@@ -31,29 +25,35 @@ class SignupCompanyForm(UserCreationForm):
         fields = ["company_name", "email", "password1", "password2"]
 
     def save(self, commit=True):
+        slug = slugify(f"Company-{self.cleaned_data['company_name']}-{get_random_string(10)}")
+
         user = super().save(commit=False)
         user.email = self.cleaned_data["email"]
+        user.user_type = "Company"
         if commit:
             user.save()
 
-        # TODO move slug generation to model
-
-        slug = slugify(f"{self.cleaned_data['company_name']}-{get_random_string(5)}")
-        while Company.objects.filter(slug=slug).exists():
-            slug = slugify(f"{self.cleaned_data['company_name']}-{get_random_string(5)}")
         company = Company.objects.create(
             company_name=self.cleaned_data["company_name"],
             user=user,
-            slug=slug
+            slug=slug,
         )
+
+        user.company = company
+
         if commit:
             company.save()
-        user.user_company.add(company)
-        user.save()
+            user.save()
         return user
 
 
 class SignupEmployeeForm(UserCreationForm):
+    USER_ROLES = (
+        ("Employee", "Employee"),
+        ("Manager", "Manager"),
+        ("HR", "HR"),
+    )
+
     first_name = forms.CharField(
         max_length=EmployeeProfileBase.MAX_FIRST_NAME_LENGTH,
         min_length=EmployeeProfileBase.MIN_FIRST_NAME_LENGTH,
@@ -73,10 +73,12 @@ class SignupEmployeeForm(UserCreationForm):
         max_length=EmployeeProfileBase.MAX_EMPLOYEE_ID_LENGTH,
         required=True
     )
+
     role = forms.ChoiceField(
         choices=USER_ROLES,
         required=True
     )
+
     managed_by = forms.ModelChoiceField(
         queryset=Manager.objects.none(),
         required=False,
@@ -87,6 +89,7 @@ class SignupEmployeeForm(UserCreationForm):
         required=True,
         widget=forms.SelectDateWidget(years=range(1980, now().year + 1)),
     )
+
     days_off_left = forms.IntegerField(
         required=True
     )
