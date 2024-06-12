@@ -4,11 +4,11 @@
     <h1>Profile Details</h1>
 
 {% if user_profile %}
-    <p>Username: {{ user_profile.username }}</p>
+    <p>Username: {{ user_profile.company.company_name }}</p>
     <p>Email: {{ user_profile.email }}</p>
     <!-- Display company details -->
     {% if company %}
-        <h2>Company: {{ company.name }}</h2>
+        <h2>Company: {{ company.company_name }}</h2>
     {% endif %}
 
     <!-- Display HRs related to the company -->
@@ -16,7 +16,7 @@
         <h3>HRs</h3>
         <ul>
             {% for hr in hrs %}
-                <li>{{ hr.user.get_full_name }}</li>
+                <li>{{ hr.full_name }}</li>
             {% endfor %}
         </ul>
     {% endif %}
@@ -26,7 +26,7 @@
         <h3>Managers</h3>
         <ul>
             {% for manager in managers %}
-                <li>{{ manager.user.get_full_name }}</li>
+                <li>{{ manager.full_name }}</li>
             {% endfor %}
         </ul>
     {% endif %}
@@ -36,7 +36,7 @@
         <h3>Employees</h3>
         <ul>
             {% for employee in employees %}
-                <li>{{ employee.user.get_full_name }}</li>
+                <li>{{ employee.full_name }}</li>
             {% endfor %}
         </ul>
     {% endif %}
