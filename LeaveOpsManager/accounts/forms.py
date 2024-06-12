@@ -25,7 +25,6 @@ class SignupCompanyForm(UserCreationForm):
         fields = ["company_name", "email", "password1", "password2"]
 
     def save(self, commit=True):
-        slug = slugify(f"Company-{self.cleaned_data['company_name']}-{get_random_string(10)}")
 
         user = super().save(commit=False)
         user.email = self.cleaned_data["email"]
@@ -36,7 +35,6 @@ class SignupCompanyForm(UserCreationForm):
         company = Company.objects.create(
             company_name=self.cleaned_data["company_name"],
             user=user,
-            # slug=slug,
         )
 
         user.company = company
@@ -157,14 +155,14 @@ class SignupEmployeeForm(UserCreationForm):
         user_company = None
         # Check if the user belongs to the 'HR' group
         if self.request.user.groups.filter(name='HR').exists():
-            hr_profile = self.request.user.hr.first()
+            hr_profile = self.request.user.hr
             if hr_profile:
                 user_company = hr_profile.company
 
         # Check if the user belongs to the 'Company' group
         elif self.request.user.groups.filter(name='Company').exists():
             # Get the company associated with the user
-            user_company = self.request.user.company.first()
+            user_company = self.request.user.company
 
         if not user_company:
             raise forms.ValidationError("Only HR and Company users can register employees and managers.")

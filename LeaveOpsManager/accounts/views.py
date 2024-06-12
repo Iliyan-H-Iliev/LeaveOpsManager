@@ -11,41 +11,16 @@ from django.contrib.auth import views as auth_views, login, logout, authenticate
 from LeaveOpsManager.accounts.forms import SignupEmployeeForm, SignupCompanyForm
 from LeaveOpsManager.accounts.models import LeaveOpsManagerUser, Company, HR, Manager, Employee
 
+import logging
 
-#
-# def register_employee(request):
-#     if request.method == 'POST':
-#         form = RegistrationEmployeeForm(request.POST)
-#         if form.is_valid():
-#             employee = form.save(commit=False)
-#             manager_id = form.cleaned_data.get('manager')
-#             manager = get_object_or_404(Employee, id=manager_id)
-#             employee.company = manager.company
-#             employee.save()
-#             return HttpResponse("Employee registered successfully", status=201)
-#         else:
-#             return HttpResponse("Form is not valid", status=400)
-#     else:
-#         form = EmployeeForm()
-#         return render(request, 'register_employee.html', {'form': form})
+logger = logging.getLogger(__name__)
 
 
-class RegistrationCompanyView(UserPassesTestMixin, views.CreateView):
+class SignupCompanyView(views.CreateView):
     template_name = "accounts/register_company.html"
     form_class = SignupCompanyForm
     redirect_authenticated_user = True
-    success_url = reverse_lazy("profile")
-
-    def form_valid(self, form):
-        # `form_valid` will call `save`
-        result = super().form_valid(form)
-
-        login(self.request, form.instance)
-
-        return result
-
-    def get_success_url(self):
-        return reverse('profile', kwargs={'slug': self.request.user.slug})
+    success_url = reverse_lazy("index")
 
     def dispatch(self, request, *args, **kwargs):
         if self.request.user.is_authenticated:
@@ -55,10 +30,28 @@ class RegistrationCompanyView(UserPassesTestMixin, views.CreateView):
     def test_func(self):
         return not self.request.user.is_authenticated
 
+    def form_valid(self, form):
+        # `form_valid` will call `save`
+        result = super().form_valid(form)
+        login(self.request, form.instance)
+        return result
 
-class RegistrationEmployeeView(views.CreateView):
+    def form_invalid(self, form):
+        logger.warning(f"Failed login attempt: {form.cleaned_data.get('name')}")
+        logger.warning(f"Form errors: {form.errors}")
+        return super().form_invalid(form)
+
+    def get_success_url(self):
+        if self.request.user.is_authenticated:
+            return reverse('profile', kwargs={'slug': self.request.user.slug})
+        else:
+            return reverse('signin user')
+
+
+class SignupEmployeeView(views.CreateView):
     template_name = 'accounts/register_employee.html'
     form_class = SignupEmployeeForm
+
     # TODO: replace 'success_url' with the actual URL name
     success_url = reverse_lazy("index")
 
@@ -92,11 +85,6 @@ class RegistrationEmployeeView(views.CreateView):
     # remaining code...
 
 
-import logging
-
-logger = logging.getLogger(__name__)
-
-
 class ProfileDetailsView(views.DetailView):
     model = LeaveOpsManagerUser
     template_name = "accounts/details_profile.html"
@@ -104,12 +92,11 @@ class ProfileDetailsView(views.DetailView):
 
     # TODO: CHECK IF THIS IS THE RIGHT WAY TO FETCH RELATED MODELS FOR THE USER PROFILE
     def get_queryset(self):
-        asdf = super().get_queryset().prefetch_related(
+        return super().get_queryset().prefetch_related(
             'company__hr_set',  # Prefetch HR instances related to the company
             'company__manager_set',  # Prefetch Manager instances related to the company
             'company__employee_set'  # Prefetch Employee instances related to the company
         )
-        return asdf
 
     def get_object(self, queryset=None):
         slug = self.kwargs.get('slug')
@@ -145,7 +132,7 @@ class ProfileDetailsView(views.DetailView):
         #     company = user_profile.employee.first().company
         # else:
 
-        company = None
+        # company = None
 
         company = (
                 user_profile.company or
@@ -179,19 +166,19 @@ class SignInUserView(auth_views.LoginView):
         return reverse('profile', kwargs={'slug': self.request.user.slug})
 
     def form_valid(self, form):
-    # Authenticate the user
+        # Authenticate the user
         username = form.cleaned_data.get('username')
         password = form.cleaned_data.get('password')
         user = authenticate(self.request, username=username, password=password)
 
-        if  user is not None:
+        if user is not None:
             # Log the user in
             login(self.request, user)
 
-        # Redirect to the user's profile
+            # Redirect to the user's profile
             return HttpResponseRedirect(reverse('profile', kwargs={'slug': user.slug}))
 
-    # If the user is not authenticated, call the parent class's form_valid method
+        # If the user is not authenticated, call the parent class's form_valid method
         return super().form_valid(form)
 
     def form_invalid(self, form):
