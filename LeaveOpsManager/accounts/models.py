@@ -14,7 +14,7 @@ from django.utils import timezone
 from .managers import LeaveOpsManagerUserManager
 
 from .base_models import EmployeeProfileBase
-from LeaveOpsManager.accounts.mixins import UserTypeMixin, AddToGroupMixin
+from LeaveOpsManager.accounts.mixins import UserTypeMixin, AddToGroupMixin, AbstractSlugMixin
 
 user_type_mapping = {
     'company': lambda self: self.company.slug if hasattr(self, 'company') else None,
@@ -124,7 +124,7 @@ class LeaveOpsManagerUser(auth_models.AbstractBaseUser, auth_models.PermissionsM
         verbose_name_plural = 'users'
 
 
-class Company(UserTypeMixin, AddToGroupMixin,  models.Model):
+class Company(UserTypeMixin, AbstractSlugMixin, AddToGroupMixin,  models.Model):
     MAX_COMPANY_NAME_LENGTH = 50
     MIN_COMPANY_NAME_LENGTH = 3
     DEFAULT_DAYS_OFF_PER_YEAR = 0
@@ -170,14 +170,6 @@ class Company(UserTypeMixin, AddToGroupMixin,  models.Model):
         related_name="company",
     )
 
-    slug = models.SlugField(
-        max_length=MAX_SLUG_LENGTH,
-        unique=True,
-        null=False,
-        blank=True,
-        editable=False,
-    )
-
     def get_slug_identifier(self):
         return slugify(f"{self.__class__.__name__}-{self.company_name}-{get_random_string(5)}")
 
@@ -192,12 +184,6 @@ class Company(UserTypeMixin, AddToGroupMixin,  models.Model):
     def get_all_employees(self):
         # from .models import Employee
         return Employee.objects.filter(company=self)
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(f"{self.get_slug_identifier()}")
-
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.company_name
@@ -245,14 +231,6 @@ class Manager(EmployeeProfileBase):
         related_name="manager",
     )
 
-    slug = models.SlugField(
-        max_length=5,
-        unique=True,
-        null=False,
-        blank=True,
-        editable=False,
-    )
-
     def get_slug_identifier(self):
         return slugify(
             f"Company:{self.company.company_name}-"
@@ -263,12 +241,14 @@ class Manager(EmployeeProfileBase):
 
 
 class HR(EmployeeProfileBase):
+    group_name = 'HR'
+
     managed_by = models.ForeignKey(
         Manager,
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        related_name='manage_hrs',
+        related_name='manages_hrs',
     )
 
     company = models.ForeignKey(
@@ -291,14 +271,6 @@ class HR(EmployeeProfileBase):
         related_name="hr",
     )
 
-    slug = models.SlugField(
-        max_length=5,
-        unique=True,
-        null=False,
-        blank=True,
-        editable=False,
-    )
-
     def get_slug_identifier(self):
         return slugify(
             f"Company:{self.company.company_name}-"
@@ -309,6 +281,8 @@ class HR(EmployeeProfileBase):
 
 
 class Employee(EmployeeProfileBase):
+    group_name = 'Employee'
+
     managed_by = models.ForeignKey(
         Manager,
         on_delete=models.SET_NULL,
@@ -335,14 +309,6 @@ class Employee(EmployeeProfileBase):
         null=True,
         blank=True,
         related_name="employee",
-    )
-
-    slug = models.SlugField(
-        max_length=5,
-        unique=True,
-        null=False,
-        blank=True,
-        editable=False,
     )
 
     def get_slug_identifier(self):
