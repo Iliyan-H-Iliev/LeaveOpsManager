@@ -13,6 +13,32 @@ class UserTypeMixin(models.Model):
         return self.get_user_class_name()
 
 
+class AbstractSlugMixin(models.Model):
+    MAX_SLUG_LENGTH = 255
+
+    class Meta:
+        abstract = True
+
+    slug = models.SlugField(
+        max_length=MAX_SLUG_LENGTH,
+        unique=True,
+        null=False,
+        blank=True,
+        editable=False,
+    )
+
+    def save(self, *args, **kwargs):
+        # super().save(*args, **kwargs)
+
+        if not self.slug:
+            self.slug = slugify(f"{self.get_slug_identifier()}")
+
+        super().save(*args, **kwargs)
+
+    def get_slug_identifier(self):
+        raise NotImplementedError("Subclasses must implement this method")
+
+
 # class OwnerRequiredMixin(AccessMixin):
 #     """Verify that the current user has this profile."""
 #

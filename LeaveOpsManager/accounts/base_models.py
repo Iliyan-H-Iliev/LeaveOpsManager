@@ -9,11 +9,12 @@ from django.utils.translation import gettext_lazy as _
 from django.apps import apps
 from django.utils import timezone
 
-from LeaveOpsManager.accounts.mixins import UserTypeMixin
+from LeaveOpsManager.accounts.mixins import UserTypeMixin, AddToGroupMixin, AbstractSlugMixin
 from LeaveOpsManager.accounts.validators import validate_date_of_hire
 
 
-class EmployeeProfileBase(UserTypeMixin, models.Model):
+class EmployeeProfileBase(UserTypeMixin,AbstractSlugMixin ,AddToGroupMixin, models.Model):
+
     class Meta:
         abstract = True
 

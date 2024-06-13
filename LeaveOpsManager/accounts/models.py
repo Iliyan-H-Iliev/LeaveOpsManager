@@ -10,7 +10,15 @@ from django.utils import timezone
 from .managers import LeaveOpsManagerUserManager
 
 from .base_models import EmployeeProfileBase
-from LeaveOpsManager.accounts.mixins import UserTypeMixin
+
+from LeaveOpsManager.accounts.mixins import UserTypeMixin, AddToGroupMixin, AbstractSlugMixin
+
+user_type_mapping = {
+    'company': lambda self: self.company.slug if hasattr(self, 'company') else None,
+    'hr': lambda self: self.hr.slug if hasattr(self, 'hr') else None,
+    'manager': lambda self: self.manager.slug if hasattr(self, 'manager') else None,
+    'employee': lambda self: self.employee.slug if hasattr(self, 'employee') else None
+}
 
 
 class LeaveOpsManagerUser(auth_models.AbstractBaseUser, auth_models.PermissionsMixin):
@@ -77,8 +85,9 @@ class Meta:
     verbose_name = 'user'
     verbose_name_plural = 'users'
 
+    
+class Company(UserTypeMixin, AbstractSlugMixin, AddToGroupMixin,  models.Model):
 
-class Company(UserTypeMixin, models.Model):
     MAX_COMPANY_NAME_LENGTH = 50
     MIN_COMPANY_NAME_LENGTH = 3
     MAX_SLUG_LENGTH = 100
@@ -110,13 +119,9 @@ class Company(UserTypeMixin, models.Model):
         related_name="user_company",
     )
 
-    slug = models.SlugField(
-        max_length=MAX_SLUG_LENGTH,
-        unique=True,
-        null=False,
-        blank=True,
-        editable=False,
-    )
+    def get_slug_identifier(self):
+        return slugify(f"{self.__class__.__name__}-{self.company_name}-{get_random_string(5)}")
+
 
     group = models.ForeignKey(
         Group,
@@ -126,15 +131,6 @@ class Company(UserTypeMixin, models.Model):
         related_name="company_group",
     )
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-
-        # Get or create the 'Company' group
-        company_group, created = Group.objects.get_or_create(name='Company')
-
-        # Add the user to the 'Company' group
-        self.user.groups.add(company_group)
-
     def get_all_hrs(self):
         # from .models import HR
         return HR.objects.filter(company=self)
@@ -142,6 +138,10 @@ class Company(UserTypeMixin, models.Model):
     def get_all_managers(self):
         # from .models import Manager
         return Manager.objects.filter(company=self)
+
+    def get_all_employees(self):
+        # from .models import Employee
+        return Employee.objects.filter(company=self)
 
     def __str__(self):
         return self.company_name
@@ -187,23 +187,25 @@ class Manager(EmployeeProfileBase):
         related_name="manager_group",
     )
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
+    def get_slug_identifier(self):
+        return slugify(
+            f"Company:{self.company.company_name}-"
+            f"{self.__class__.__name__}-"
+            f"{self.full_name}-"
+            f"{self.employee_id}"
+        )
 
-        # Get or create the 'Company' group
-        manager_group, created = Group.objects.get_or_create(name='Manager')
-
-        # Add the user to the 'Company' group
-        self.user.groups.add(manager_group)
 
 
 class HR(EmployeeProfileBase):
+    group_name = 'HR'
+
     managed_by = models.ForeignKey(
         Manager,
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
-        related_name='manage_hrs',
+        related_name='manages_hrs',
     )
 
     company = models.ForeignKey(
@@ -226,17 +228,18 @@ class HR(EmployeeProfileBase):
         related_name="hr_group",
     )
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-
-        # Get or create the 'Company' group
-        hr_group, created = Group.objects.get_or_create(name='HR')
-
-        # Add the user to the 'Company' group
-        self.user.groups.add(hr_group)
+    def get_slug_identifier(self):
+        return slugify(
+            f"Company:{self.company.company_name}-"
+            f"{self.__class__.__name__}-"
+            f"{self.full_name}-"
+            f"{self.employee_id}"
+        )
 
 
 class Employee(EmployeeProfileBase):
+    group_name = 'Employee'
+
     managed_by = models.ForeignKey(
         Manager,
         on_delete=models.SET_NULL,
@@ -265,14 +268,12 @@ class Employee(EmployeeProfileBase):
         related_name="employee_group",
     )
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-
-        # Get or create the 'Company' group
-        employee_group, created = Group.objects.get_or_create(name='Employee')
-
-        # Add the user to the 'Company' group
-        self.user.groups.add(employee_group)
+    def get_slug_identifier(self):
+        return slugify(
+            f"Company:{self.company.company_name}-"
+            f"{self.__class__.__name__}-"
+            f"{self.full_name}-"
+            f"{self.employee_id}"
 
     def promote_to_manager(self):
         # Create a new Manager instance with the same attributes as the employee
