@@ -139,42 +139,37 @@ class SignupEmployeeForm(UserCreationForm):
         # company_instance = kwargs.pop("company_instance", None)
         super().__init__(*args, **kwargs)
 
-        # user_instance = self.request.user
-        #
-        # company_name = user_instance.company
-        #
-        # company_instance = user_instance.company.first()
+        if not self.request:
+            raise forms.ValidationError("You must be authenticated to register employees.")
 
-        if not self.request.user.is_authenticated:
-            raise forms.ValidationError("You must be authenticated to register employees and managers.")
+        user = self.request.user
 
-        user_company = None
-        # Check if the user belongs to the 'HR' group
-        if self.request.user.groups.filter(name='HR').exists():
-            hr_profile = self.request.user.hr
-            if hr_profile:
-                user_company = hr_profile.company
+        if not user and not user.is_authenticated:
+            raise forms.ValidationError("You must be authenticated to register employees.")
 
-        # Check if the user belongs to the 'Company' group
-        elif self.request.user.groups.filter(name='Company').exists():
-            # Get the company associated with the user
-            user_company = self.request.user.company
-
-        if not user_company:
+        if user.user_type != "HR" and user.user_type != "Company":
             raise forms.ValidationError("Only HR and Company users can register employees and managers.")
 
+        company = user.user_company
+
+        if not company:
+            raise forms.ValidationError("You must be associated with a company to register employees")
+
+        # Check if the user belongs to the 'HR' group
+        # if user.user_type != "HR" or user.user_type != "Company":
+        #     raise forms.ValidationError("Only HR and Company users can register employees and managers.")
+
         # Filter the manager queryset based on the user's company
-        self.fields['managed_by'].queryset = Manager.objects.filter(company=user_company)
+        self.fields['managed_by'].queryset = Manager.objects.filter(company=company)
         self.fields['company'] = forms.ModelChoiceField(
-            queryset=Company.objects.filter(pk=user_company.pk),
+            queryset=Company.objects.filter(pk=company.pk),
             disabled=True,
-            initial=user_company.pk,
+            initial=company.pk,
             required=False,
             widget=forms.HiddenInput(),
         )
-        self.fields["managed_by"].queryset = Manager.objects.filter(company=user_company)
+        self.fields["managed_by"].queryset = Manager.objects.filter(company=company)
         self.fields["manages_team"].queryset = Manager.objects.filter(manages_team=Manager.manages_team)
-        # self.fields["company"].widget = forms.HiddenInput()
         self.fields["password1"].widget = forms.HiddenInput()
         self.fields["password2"].widget = forms.HiddenInput()
 
@@ -182,10 +177,11 @@ class SignupEmployeeForm(UserCreationForm):
         user = UserModel.objects.create_user(
             email=self.cleaned_data["email"],
             # todo UserModel.objects.make_random_password(), is_active=False
+            user_type=self.cleaned_data["role"],
             password="ilich3",
             is_active=True,
+
         )
-        # TODO Move slug generation to model
 
         common_data = {
             "first_name": self.cleaned_data["first_name"],

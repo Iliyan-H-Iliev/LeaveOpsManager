@@ -16,11 +16,18 @@ from .managers import LeaveOpsManagerUserManager
 from .base_models import EmployeeProfileBase
 from LeaveOpsManager.accounts.mixins import UserTypeMixin, AddToGroupMixin, AbstractSlugMixin
 
-user_type_mapping = {
+user_slug_mapping = {
     'company': lambda self: self.company.slug if hasattr(self, 'company') else None,
     'hr': lambda self: self.hr.slug if hasattr(self, 'hr') else None,
     'manager': lambda self: self.manager.slug if hasattr(self, 'manager') else None,
     'employee': lambda self: self.employee.slug if hasattr(self, 'employee') else None
+}
+
+user_company_mapping = {
+    "company": lambda self: self.company if hasattr(self, 'company') else None,
+    "hr": lambda self: self.hr.company if hasattr(self, 'hr') else None,
+    "manager": lambda self: self.manager.company if hasattr(self, 'manager') else None,
+    "employee": lambda self: self.employee.company if hasattr(self, 'employee') else None
 }
 
 
@@ -106,7 +113,7 @@ class LeaveOpsManagerUser(auth_models.AbstractBaseUser, auth_models.PermissionsM
 
     def get_slug(self):
         user_type = self.user_type.lower()
-        get_slug_function = user_type_mapping.get(user_type)
+        get_slug_function = user_slug_mapping.get(user_type)
         if get_slug_function:
             return get_slug_function(self)
         return None
@@ -114,6 +121,17 @@ class LeaveOpsManagerUser(auth_models.AbstractBaseUser, auth_models.PermissionsM
     @property
     def slug(self):
         return self.get_slug()
+
+    def get_company(self):
+        user_type = self.user_type.lower()
+        get_company_function = user_company_mapping.get(user_type)
+        if get_company_function:
+            return get_company_function(self)
+        return None
+
+    @property
+    def user_company(self):
+        return self.get_company()
 
     USERNAME_FIELD = "email"
 

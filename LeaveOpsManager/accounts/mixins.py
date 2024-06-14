@@ -85,6 +85,4 @@ class AddToGroupMixin(models.Model):
         user.groups.add(group)
         user.save()
 
-    def get_slug_identifier(self):
-        raise NotImplementedError("Subclasses must implement this method")
 

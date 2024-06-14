@@ -133,13 +133,15 @@ class ProfileDetailsView(views.DetailView):
         # else:
 
         # company = None
+        company = user_profile.company if hasattr(user_profile, 'company') else None
 
-        company = (
-                user_profile.company or
-                (user_profile.hr and user_profile.hr.company) or
-                (user_profile.manager and user_profile.manager.company) or
-                (user_profile.employee and user_profile.employee.company)
-        )
+
+        # company = (
+        #         user_profile.company or
+        #         (user_profile.hr and user_profile.hr.company) or
+        #         (user_profile.manager and user_profile.manager.company) or
+        #         (user_profile.employee and user_profile.employee.company)
+        # )
 
         # Only attempt to get related instances if the company exists
         if company:
