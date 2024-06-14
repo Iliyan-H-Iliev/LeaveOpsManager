@@ -137,7 +137,6 @@ class SignupEmployeeForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop("request", None)
-        # company_instance = kwargs.pop("company_instance", None)
         super().__init__(*args, **kwargs)
 
         if not self.request:
@@ -148,7 +147,7 @@ class SignupEmployeeForm(UserCreationForm):
         if not user or not user.is_authenticated:
             raise forms.ValidationError("You must be authenticated to register employees.")
 
-        if user.user_type != "HR" and user.user_type != "Company":
+        if user.user_type not in ["HR", "Company"]:
             raise forms.ValidationError("Only HR and Company users can register employees and managers.")
 
         company = user.get_company
@@ -156,12 +155,6 @@ class SignupEmployeeForm(UserCreationForm):
         if not company:
             raise forms.ValidationError("You must be associated with a company to register employees")
 
-        # Check if the user belongs to the 'HR' group
-        # if user.user_type != "HR" or user.user_type != "Company":
-        #     raise forms.ValidationError("Only HR and Company users can register employees and managers.")
-
-        # Filter the manager queryset based on the user's company
-        self.fields['managed_by'].queryset = Manager.objects.filter(company=company)
         self.fields['company'] = forms.ModelChoiceField(
             queryset=Company.objects.filter(pk=company.pk),
             disabled=True,

@@ -110,3 +110,45 @@ Creating a comprehensive leave request app involves several core functionalities
 6. **Maintenance and Updates:** Regularly update the app based on user feedback and evolving requirements.
 
 This structure ensures your leave request app is comprehensive, user-friendly, and scalable, meeting the needs of both employees and management effectively.
+
+
+form employregist
+
+def __init__(self, *args, **kwargs):
+    self.request = kwargs.pop("request", None)
+    super().__init__(*args, **kwargs)
+
+    if not self.request.user.is_authenticated:
+        raise forms.ValidationError("You must be authenticated.")
+
+    user_company = self._get_user_company()
+    if not user_company:
+        raise forms.ValidationError("Only HR and Company users can register.")
+
+    self._filter_manager_queryset(user_company)
+    self._set_company_field(user_company)
+    self._set_password_fields()
+
+def _get_user_company(self):
+    if self.request.user.groups.filter(name='HR').exists():
+        return self.request.user.hr.company
+    elif self.request.user.groups.filter(name='Company').exists():
+        return self.request.user.company
+    return None
+
+def _filter_manager_queryset(self, user_company):
+    self.fields['managed_by'].queryset = Manager.objects.filter(company=user_company)
+    self.fields["manages_team"].queryset = Manager.objects.filter(manages_team=Manager.manages_team)
+
+def _set_company_field(self, user_company):
+    self.fields['company'] = forms.ModelChoiceField(
+        queryset=Company.objects.filter(pk=user_company.pk),
+        disabled=True,
+        initial=user_company.pk,
+        required=False,
+        widget=forms.HiddenInput(),
+    )
+
+def _set_password_fields(self):
+    self.fields["password1"].widget = forms.HiddenInput()
+    self.fields["password2"].widget = forms.HiddenInput()
