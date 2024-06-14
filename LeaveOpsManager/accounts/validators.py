@@ -4,7 +4,6 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 
-
 def validate_date_of_hire(value):
     if value < date(1980, 1, 1) or value > timezone.now().date():
         raise ValidationError("The date of hire must be between 1st January 1980, and today.")
