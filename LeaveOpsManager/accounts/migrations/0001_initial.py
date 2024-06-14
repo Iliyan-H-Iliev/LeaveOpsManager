@@ -74,7 +74,6 @@ class Migration(migrations.Migration):
                 ('address', models.TextField(blank=True, null=True)),
                 ('date_of_birth', models.DateField(blank=True, null=True)),
                 ('profile_picture', models.URLField(blank=True, null=True)),
-                ('slug', models.SlugField(blank=True, editable=False, max_length=100, unique=True)),
                 ('manages_team', models.CharField(max_length=50, validators=[django.core.validators.MinLengthValidator(3)])),
 
                 ('company', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='managers', to='accounts.company')),

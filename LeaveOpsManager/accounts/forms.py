@@ -92,10 +92,6 @@ class SignupEmployeeForm(UserCreationForm):
         required=True
     )
 
-    # company = forms.CharField(
-    #     queryset=Company.objects.all().filter(company_name=user.company),
-    # )
-
     password1 = forms.CharField(
         widget=forms.PasswordInput,
         required=False,
@@ -141,7 +137,7 @@ class SignupEmployeeForm(UserCreationForm):
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop("request", None)
         # company_instance = kwargs.pop("company_instance", None)
-        super(SignupEmployeeForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # user_instance = self.request.user
         #
@@ -190,8 +186,6 @@ class SignupEmployeeForm(UserCreationForm):
             is_active=True,
         )
         # TODO Move slug generation to model
-        slug = slugify(
-            f"{self.cleaned_data['first_name']}-{self.cleaned_data['last_name']}-{self.cleaned_data['employee_id']}")
 
         common_data = {
             "first_name": self.cleaned_data["first_name"],
@@ -202,7 +196,6 @@ class SignupEmployeeForm(UserCreationForm):
             "date_of_hire": self.cleaned_data["date_of_hire"],
             "days_off_left": self.cleaned_data["days_off_left"],
             "company": self.cleaned_data["company"],
-            "slug": slug,
         }
 
         if self.cleaned_data["role"] == "HR":
