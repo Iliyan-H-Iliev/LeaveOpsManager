@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator
 from django.db import models
@@ -15,6 +14,7 @@ from LeaveOpsManager.accounts.validators import validate_date_of_hire
 
 
 class EmployeeProfileBase(UserTypeMixin,AbstractSlugMixin ,AddToGroupMixin, models.Model):
+
     class Meta:
         abstract = True
 
@@ -24,6 +24,7 @@ class EmployeeProfileBase(UserTypeMixin,AbstractSlugMixin ,AddToGroupMixin, mode
     MIN_LAST_NAME_LENGTH = 2
     MAX_EMPLOYEE_ID_LENGTH = 15
     MAX_PHONE_NUMBER_LENGTH = 15
+    MAX_SLUG_LENGTH = 100
 
     first_name = models.CharField(
         max_length=MAX_FIRST_NAME_LENGTH,
@@ -77,7 +78,19 @@ class EmployeeProfileBase(UserTypeMixin,AbstractSlugMixin ,AddToGroupMixin, mode
         null=True,
     )
 
+    slug = models.SlugField(
+        max_length=MAX_SLUG_LENGTH,
+        unique=True,
+        blank=True,
+        null=False,
+        editable=False,
+    )
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        if not self.slug:
+            self.slug = slugify(f"{self.first_name}-{self.last_name}-{self.employee_id}")
 
     @property
     def full_name(self):
@@ -85,7 +98,6 @@ class EmployeeProfileBase(UserTypeMixin,AbstractSlugMixin ,AddToGroupMixin, mode
 
     def __str__(self):
         return f"{self.full_name} - {self.user_type}"
-
 
     # TODO: change the method!
     # def save(self, *args, **kwargs):
@@ -111,3 +123,4 @@ class EmployeeProfileBase(UserTypeMixin,AbstractSlugMixin ,AddToGroupMixin, mode
 #             employee.save()
 #         # Call the superclass delete method
 #         super().delete(*args, **kwargs)
+
