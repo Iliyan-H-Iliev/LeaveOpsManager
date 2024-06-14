@@ -118,7 +118,7 @@ class ProfileDetailsView(views.DetailView):
     # TODO check if this is the right way to fetch related models for the user profile
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        user_profile = self.object
+        user = self.object
 
         # Get the related company instance
 
@@ -133,7 +133,7 @@ class ProfileDetailsView(views.DetailView):
         # else:
 
         # company = None
-        company = user_profile.company if hasattr(user_profile, 'company') else None
+        company = user.get_company
 
 
         # company = (

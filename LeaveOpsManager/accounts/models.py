@@ -91,27 +91,7 @@ class LeaveOpsManagerUser(auth_models.AbstractBaseUser, auth_models.PermissionsM
 
     # TODO add user_type to the registration form and update the view to save the user_type
 
-    # def get_slug(self):
-    #
-    #     user_type_mapping = {
-    #         'company': lambda: self.company.slug,
-    #         'hr': lambda: self.hr.slug,
-    #         'manager': lambda: self.manager.slug,
-    #         'employee': lambda: self.employee.slug
-    #     }
-    #
-    #     user_type = self.user_type.lower()
-    #
-    #     related_model_name = user_type_mapping.get(user_type)
-    #
-    #     if related_model_name:
-    #         related_model_instance = getattr(self, related_model_name, None)
-    #         if related_model_instance:
-    #             return related_model_instance.slug
-    #
-    #     return None
-
-    def get_slug(self):
+    def get_user_slug(self):
         user_type = self.user_type.lower()
         get_slug_function = user_slug_mapping.get(user_type)
         if get_slug_function:
@@ -120,9 +100,9 @@ class LeaveOpsManagerUser(auth_models.AbstractBaseUser, auth_models.PermissionsM
 
     @property
     def slug(self):
-        return self.get_slug()
+        return self.get_user_slug()
 
-    def get_company(self):
+    def get_user_company(self):
         user_type = self.user_type.lower()
         get_company_function = user_company_mapping.get(user_type)
         if get_company_function:
@@ -130,8 +110,8 @@ class LeaveOpsManagerUser(auth_models.AbstractBaseUser, auth_models.PermissionsM
         return None
 
     @property
-    def user_company(self):
-        return self.get_company()
+    def get_company(self):
+        return self.get_user_company()
 
     USERNAME_FIELD = "email"
 
@@ -147,7 +127,7 @@ class Company(UserTypeMixin, AbstractSlugMixin, AddToGroupMixin,  models.Model):
     MIN_COMPANY_NAME_LENGTH = 3
     DEFAULT_DAYS_OFF_PER_YEAR = 0
     DEFAULT_TRANSFERABLE_DAYS_OFF = 0
-    MAX_SLUG_LENGTH = 100
+    RANDOM_STRING_LENGTH = 10
 
     group_name = 'Company'
 
@@ -189,7 +169,7 @@ class Company(UserTypeMixin, AbstractSlugMixin, AddToGroupMixin,  models.Model):
     )
 
     def get_slug_identifier(self):
-        return slugify(f"{self.__class__.__name__}-{self.company_name}-{get_random_string(5)}")
+        return slugify(f"{self.__class__.__name__}-{self.company_name}-{get_random_string(self.RANDOM_STRING_LENGTH)}")
 
     def get_all_hrs(self):
         # from .models import HR
@@ -202,6 +182,9 @@ class Company(UserTypeMixin, AbstractSlugMixin, AddToGroupMixin,  models.Model):
     def get_all_employees(self):
         # from .models import Employee
         return Employee.objects.filter(company=self)
+
+    def get_all_company_members(self):
+        return self.get_all_hrs() | self.get_all_managers() | self.get_all_employees()
 
     def __str__(self):
         return self.company_name
@@ -249,14 +232,6 @@ class Manager(EmployeeProfileBase):
         related_name="manager",
     )
 
-    def get_slug_identifier(self):
-        return slugify(
-            f"Company:{self.company.company_name}-"
-            f"{self.__class__.__name__}-"
-            f"{self.full_name}-"
-            f"{self.employee_id}"
-        )
-
 
 class HR(EmployeeProfileBase):
     group_name = 'HR'
@@ -288,14 +263,6 @@ class HR(EmployeeProfileBase):
         blank=True,
         related_name="hr",
     )
-
-    def get_slug_identifier(self):
-        return slugify(
-            f"Company:{self.company.company_name}-"
-            f"{self.__class__.__name__}-"
-            f"{self.full_name}-"
-            f"{self.employee_id}"
-        )
 
 
 class Employee(EmployeeProfileBase):
@@ -329,13 +296,6 @@ class Employee(EmployeeProfileBase):
         related_name="employee",
     )
 
-    def get_slug_identifier(self):
-        return slugify(
-            f"Company:{self.company.company_name}-"
-            f"{self.__class__.__name__}-"
-            f"{self.full_name}-"
-            f"{self.employee_id}"
-        )
 
     # def promote_to_manager(self):
     #     # Create a new Manager instance with the same attributes as the employee

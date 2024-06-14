@@ -1,3 +1,6 @@
+{% extends "layout.html" %}
+{% block content %}
+
 {% load filters %}
 <form action="{% url 'register employee' %}?next={{ next }}" method="post">
 {#                <p>#}
@@ -11,3 +14,4 @@
 
                 {% csrf_token %}
             </form>
+{% endblock %}

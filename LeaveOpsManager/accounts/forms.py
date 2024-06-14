@@ -18,6 +18,7 @@ class SignupCompanyForm(UserCreationForm):
         max_length=Company.MAX_COMPANY_NAME_LENGTH,
         min_length=Company.MIN_COMPANY_NAME_LENGTH,
         required=True,
+        widget=forms.TextInput(attrs={'autofocus': 'autofocus'}),
     )
 
     class Meta:
@@ -144,13 +145,13 @@ class SignupEmployeeForm(UserCreationForm):
 
         user = self.request.user
 
-        if not user and not user.is_authenticated:
+        if not user or not user.is_authenticated:
             raise forms.ValidationError("You must be authenticated to register employees.")
 
         if user.user_type != "HR" and user.user_type != "Company":
             raise forms.ValidationError("Only HR and Company users can register employees and managers.")
 
-        company = user.user_company
+        company = user.get_company
 
         if not company:
             raise forms.ValidationError("You must be associated with a company to register employees")

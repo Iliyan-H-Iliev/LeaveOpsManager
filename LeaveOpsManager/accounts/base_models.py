@@ -77,6 +77,14 @@ class EmployeeProfileBase(UserTypeMixin,AbstractSlugMixin, AddToGroupMixin, mode
         null=True,
     )
 
+    def get_slug_identifier(self):
+        company_name = self.company.company_name if hasattr(self, 'company') else 'NoCompany'
+        return slugify(
+            f"Company:{company_name}-"
+            f"{self.__class__.__name__}-"
+            f"{self.full_name}-"
+            f"{self.employee_id}"
+        )
 
     @property
     def full_name(self):
