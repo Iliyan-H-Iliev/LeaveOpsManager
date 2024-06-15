@@ -28,9 +28,12 @@
 </head>
 <body>
     <div class="navbar">
+    <a href="{% url 'index' %}">Home</a>
     <a href="{% url 'signin user' %}">Login</a>
+    <a href="{% url 'profile'  slug=user.slug %}">Profile</a>
     <a href="{% url 'register company' %}">Register Now</a>
     <a href="{% url 'register employee' %}">Employee</a>
+    <a href="{% url 'edit profile' slug=user.slug %}">edit</a>
 {#      {% if request.user.is_authenticated %}#}
 {#    <a href="{% url 'profile' request.user.slug  %}">Profile</a>#}
 {#{% endif %}#}

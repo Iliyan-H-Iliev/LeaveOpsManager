@@ -1,17 +1,22 @@
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import UserPassesTestMixin
+from django.db.models import Q
 from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 
 from django.shortcuts import render, redirect
 
 from django.urls import reverse_lazy, reverse
-from django.views import generic as views
+from django.views import generic as views, View
 from django.contrib.auth import views as auth_views, login, logout, authenticate
 
-from LeaveOpsManager.accounts.forms import SignupEmployeeForm, SignupCompanyForm
+from LeaveOpsManager.accounts.forms import SignupEmployeeForm, SignupCompanyForm, EditManagerForm, \
+    EditLeaveOpsManagerUserEditForm, EditHRForm, EditEmployeeForm
 from LeaveOpsManager.accounts.models import LeaveOpsManagerUser, Company, HR, Manager, Employee
 
 import logging
+
+from LeaveOpsManager.accounts.utils import get_user_by_slug
 
 logger = logging.getLogger(__name__)
 
@@ -100,60 +105,19 @@ class ProfileDetailsView(views.DetailView):
 
     def get_object(self, queryset=None):
         slug = self.kwargs.get('slug')
-        user = None
-
-        # Try to fetch the user from the related models
-        for model in [Company, HR, Manager, Employee]:
-            try:
-                user = LeaveOpsManagerUser.objects.get(**{f"{model.__name__.lower()}__slug": slug})
-                break
-            except LeaveOpsManagerUser.DoesNotExist:
-                continue
-
-        if user is None:
-            raise Http404("No user found matching the query")
-
-        return user
+        return get_user_by_slug(slug)
 
     # TODO check if this is the right way to fetch related models for the user profile
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.object
 
-        # Get the related company instance
-
-        # if user_profile.company.first():
-        #     company = user_profile.company.first()
-        # elif user_profile.hr.first():
-        #     company = user_profile.hr.first().company
-        # elif user_profile.manager.first():
-        #     company = user_profile.manager.first().company
-        # elif user_profile.employee.first():
-        #     company = user_profile.employee.first().company
-        # else:
-
-        # company = None
         company = user.get_company
 
-
-        # company = (
-        #         user_profile.company or
-        #         (user_profile.hr and user_profile.hr.company) or
-        #         (user_profile.manager and user_profile.manager.company) or
-        #         (user_profile.employee and user_profile.employee.company)
-        # )
-
-        # Only attempt to get related instances if the company exists
-        if company:
-            context['company'] = company
-            context['hrs'] = HR.objects.filter(company=company)
-            context['managers'] = Manager.objects.filter(company=company)
-            context['employees'] = Employee.objects.filter(company=company)
-        else:
-            context['company'] = None
-            context['hrs'] = None
-            context['managers'] = None
-            context['employees'] = None
+        context['company'] = company if company else None
+        context['hrs'] = HR.objects.filter(company=company) if company else None
+        context['managers'] = Manager.objects.filter(company=company) if company else None
+        context['employees'] = Employee.objects.filter(company=company) if company else None
 
         return context
 
@@ -190,22 +154,90 @@ class SignInUserView(auth_views.LoginView):
 
 
 # class ProfileUpdateView(views.UpdateView):
-#     queryset = Profile.objects.all()
+#     model = LeaveOpsManagerUser
+#     form_class = ProfileUpdateForm
 #     template_name = "accounts/edit_profile.html"
-#     fields = ("first_name", "last_name", "date_of_birth", "profile_picture")
+#     # fields = [ 'email',]
+#     success_url = reverse_lazy("profile")
 #
 #     def get_success_url(self):
-#         return reverse("details profile", kwargs={
-#             "pk": self.object.pk,
-#         })
+#         return reverse('profile', kwargs={'slug': self.object.slug})
 #
-#     def get_form(self, form_class=None):
-#         form = super().get_form(form_class=form_class)
+#     def get_queryset(self):
+#         return super().get_queryset().prefetch_related(
+#             'company__hr',  # Prefetch HR instances related to the company
+#             'company__manager',  # Prefetch Manager instances related to the company
+#             'company__employee'  # Prefetch Employee instances related to the company
+#         )
 #
-#         form.fields["date_of_birth"].widget.attrs["type"] = "date"
-#         form.fields["date_of_birth"].label = "Birthday"
-#         return form
+#     def get_object(self, queryset=None):
+#         slug = self.kwargs.get('slug')
+#         return get_user_by_slug(slug)
 
+
+class ProfileUpdateView(View):
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        user_form = EditLeaveOpsManagerUserEditForm(instance=user)
+        additional_form = None
+
+        if user.user_type == 'Manager':
+            additional_form = EditManagerForm(instance=user.manager)
+        elif user.user_type == 'HR':
+            additional_form = EditHRForm(instance=user.hr)
+        elif user.user_type == 'Employee':
+            additional_form = EditEmployeeForm(instance=user.employee)
+
+        return render(request, 'accounts/edit_profile.html', {
+            'user_form': user_form,
+            'additional_form': additional_form,
+        })
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        user_form = EditLeaveOpsManagerUserEditForm(request.POST, instance=user)
+        additional_form = None
+
+        if user.user_type == 'Manager':
+            additional_form = EditManagerForm(request.POST, instance=user.manager)
+        elif user.user_type == 'HR':
+            additional_form = EditHRForm(request.POST, instance=user.hr)
+        elif user.user_type == 'Employee':
+            additional_form = EditEmployeeForm(request.POST, instance=user.employee)
+
+        if user_form.is_valid() and (additional_form is None or additional_form.is_valid()):
+            user_form.save()
+            if additional_form:
+                additional_form.save()
+            return redirect('profile', slug=user.slug)
+
+        return render(request, 'accounts/edit_profile.html', {
+            'user_form': user_form,
+            'additional_form': additional_form,
+        })
+
+# class ProfileUpdateView(views.UpdateView):
+#     template_name = "accounts/edit_profile.html"
+#
+#     def get_form_class(self):
+#         user = self.request.user
+#
+#         if hasattr(user, 'hr'):
+#             return EditHRForm
+#         elif hasattr(user, 'manager'):
+#             return EditManagerForm
+#         elif hasattr(user, 'employee'):
+#             return EditEmployeeForm
+#         else:
+#             return LeaveOpsManagerUser
+#
+#     def get_object(self, queryset=None):
+#         return self.request.user
+#
+#     def get_success_url(self):
+#         slug = self.request.user.slug
+#         return get_user_by_slug(slug)
 
 def signout_user(request):
     logout(request)

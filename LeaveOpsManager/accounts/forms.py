@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.utils.crypto import get_random_string
 from django.utils.text import slugify
 
@@ -8,9 +8,14 @@ from django.utils.timezone import now
 
 from django.contrib.auth.models import Group
 
-from .models import EmployeeProfileBase, Company, Manager, HR, Employee
+from .models import EmployeeProfileBase, Company, Manager, HR, Employee, LeaveOpsManagerUser
 
 UserModel = get_user_model()
+
+user_edit_fields = ['email', 'is_active',]
+employee_edit_fields = ['first_name', 'last_name', 'employee_id', 'managed_by', 'date_of_hire', 'days_off_left',
+                        "phone_number", "address", "date_of_birth", "profile_picture"]
+company_edit_fields = ['company_name']
 
 
 class SignupCompanyForm(UserCreationForm):
@@ -211,3 +216,71 @@ class SignupEmployeeForm(UserCreationForm):
             # )
 
         return user
+
+
+class EditLeaveOpsManagerUserEditForm(forms.ModelForm):
+    class Meta:
+        model = LeaveOpsManagerUser
+        fields = user_edit_fields  # Add other fields you want to edit
+
+    def __init__(self, *args, **kwargs):
+        super(EditLeaveOpsManagerUserEditForm, self).__init__(*args, **kwargs)
+        # self.fields['is_active'].disabled = True
+        self.fields['is_active'].widget.attrs['disabled'] = True
+
+
+class EditManagerForm(forms.ModelForm):
+    class Meta:
+        model = Manager
+        fields =employee_edit_fields  # Add other fields you want to edit
+
+
+class EditHRForm(forms.ModelForm):
+    class Meta:
+        model = HR
+        fields = employee_edit_fields  # Add other fields you want to edit
+
+
+class EditEmployeeForm(forms.ModelForm):
+    class Meta:
+        model = Employee
+        fields = employee_edit_fields  # Add other fields you want to edit
+
+
+class EditCompanyForm(forms.ModelForm):
+    class Meta:
+        model = Company
+        fields = company_edit_fields
+
+# class ProfileUpdateForm(forms.ModelForm):
+#     def __init__(self, *args, **kwargs):
+#         super(ProfileUpdateForm, self).__init__(*args, **kwargs)
+#         self.user_form = EditLeaveOpsManagerUserEditForm(*args, **kwargs)
+#         self.manager_form = EditManagerForm(*args, **kwargs)
+#         self.hr_form = EditHRForm(*args, **kwargs)
+#         self.employee_form = EditEmployeeForm(*args, **kwargs)
+#
+#     def is_valid(self):
+#         return (
+#                 self.user_form.is_valid() and
+#                 self.manager_form.is_valid() and
+#                 self.hr_form.is_valid() and
+#                 self.employee_form.is_valid()
+#                 )
+#
+#     def save(self, commit=True):
+#         user = self.user_form.save(commit=False)
+#         manager = self.manager_form.save(commit=False)
+#         hr = self.hr_form.save(commit=False)
+#         employee = self.employee_form.save(commit=False)
+#
+#         if commit:
+#             user.save()
+#             manager.user = user
+#             manager.save()
+#             hr.user = user
+#             hr.save()
+#             employee.user = user
+#             employee.save()
+#
+#         return user, manager, hr, employee

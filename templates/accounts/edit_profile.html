@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+{% load filters %}
+
+<form action="{% url 'edit profile'  slug=user.slug %}" method="post" enctype="multipart/form-data">
+    {{ user_form.as_p }}
+    {% if additional_form %}
+      {{ additional_form.as_p }}
+    {% endif %}
+    <button type="submit">Save</button>
+    {% csrf_token %}
+</form>
+    
+    {% endblock %}
