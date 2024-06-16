@@ -134,3 +134,17 @@ AUTH_USER_MODEL = 'accounts.LeaveOpsManagerUser'
 
 
 # AUTHENTICATION_BACKENDS = ["LeaveOpsManager.accounts.backends.EmailBackend"]
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+}

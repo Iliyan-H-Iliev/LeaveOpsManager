@@ -28,16 +28,26 @@
 </head>
 <body>
     <div class="navbar">
-    <a href="{% url 'index' %}">Home</a>
-    <a href="{% url 'signin user' %}">Login</a>
-    <a href="{% url 'profile'  slug=user.slug %}">Profile</a>
-    <a href="{% url 'register company' %}">Register Now</a>
-    <a href="{% url 'register employee' %}">Employee</a>
-    <a href="{% url 'edit profile' slug=user.slug %}">edit</a>
+    <a href="{% url 'index'  %}">Home</a>
+    
+             {% if not request.user.is_authenticated %}
+                  <a href="{% url 'signin user' %}">Login</a>
+                 <a href="{% url 'register company' %}">Register Now</a>
+             {% else %}
+                 <a href="{% url 'profile'  slug=user.slug %}">Profile</a>
+                 <a href="{% url 'register employee' %}">Employee</a>
+                 <a href="{% url 'edit profile' slug=user.slug %}">Edit</a>
+                 <a href="{% url 'signout user' %}">Logout</a>
+                 <a href="{% url 'company members' %}">Company Members</a>
+             {% endif %}
+
+                 
+      
+
 {#      {% if request.user.is_authenticated %}#}
 {#    <a href="{% url 'profile' request.user.slug  %}">Profile</a>#}
 {#{% endif %}#}
-    <a href="{% url 'signout user' %}">Logout</a>
+    
 </div>
 
     {% block content %}

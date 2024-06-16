@@ -10,7 +10,7 @@ from django.apps import apps
 from django.utils import timezone
 
 from LeaveOpsManager.accounts.mixins import UserTypeMixin, AddToGroupMixin, AbstractSlugMixin
-from LeaveOpsManager.accounts.validators import validate_date_of_hire
+from LeaveOpsManager.accounts.validators import validate_date_of_hire, phone_number_validator, phone_regex
 
 
 class EmployeeProfileBase(UserTypeMixin,AbstractSlugMixin, AddToGroupMixin, models.Model):
@@ -60,6 +60,7 @@ class EmployeeProfileBase(UserTypeMixin,AbstractSlugMixin, AddToGroupMixin, mode
 
     phone_number = models.CharField(
         max_length=MAX_PHONE_NUMBER_LENGTH,
+        validators=[phone_number_validator],
         blank=True,
         null=True)
 

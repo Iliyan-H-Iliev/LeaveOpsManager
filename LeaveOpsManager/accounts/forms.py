@@ -12,7 +12,7 @@ from .models import EmployeeProfileBase, Company, Manager, HR, Employee, LeaveOp
 
 UserModel = get_user_model()
 
-user_edit_fields = ['email', 'is_active',]
+user_edit_fields = ['email']
 employee_edit_fields = ['first_name', 'last_name', 'employee_id', 'managed_by', 'date_of_hire', 'days_off_left',
                         "phone_number", "address", "date_of_birth", "profile_picture"]
 company_edit_fields = ['company_name']
@@ -221,36 +221,60 @@ class SignupEmployeeForm(UserCreationForm):
 class EditLeaveOpsManagerUserEditForm(forms.ModelForm):
     class Meta:
         model = LeaveOpsManagerUser
-        fields = user_edit_fields  # Add other fields you want to edit
+        fields = ['email']
 
     def __init__(self, *args, **kwargs):
         super(EditLeaveOpsManagerUserEditForm, self).__init__(*args, **kwargs)
-        # self.fields['is_active'].disabled = True
-        self.fields['is_active'].widget.attrs['disabled'] = True
-
-
-class EditManagerForm(forms.ModelForm):
-    class Meta:
-        model = Manager
-        fields =employee_edit_fields  # Add other fields you want to edit
-
-
-class EditHRForm(forms.ModelForm):
-    class Meta:
-        model = HR
-        fields = employee_edit_fields  # Add other fields you want to edit
-
-
-class EditEmployeeForm(forms.ModelForm):
-    class Meta:
-        model = Employee
-        fields = employee_edit_fields  # Add other fields you want to edit
 
 
 class EditCompanyForm(forms.ModelForm):
     class Meta:
         model = Company
-        fields = company_edit_fields
+        fields = ["company_name"]
+
+
+class EditEmployeeBaseForm(forms.ModelForm):
+    class Meta:
+        model = Employee
+        fields = [
+            'first_name',
+            'last_name',
+            'employee_id',
+            'managed_by',
+            'date_of_hire',
+            'days_off_left',
+            "phone_number",
+            "address",
+            "date_of_birth",
+            "profile_picture"
+        ]  # Add other fields you want to edit
+
+    def __init__(self, *args, **kwargs):
+        super(EditEmployeeBaseForm, self).__init__(*args, **kwargs)
+        self.fields['managed_by'].disabled = True
+        self.fields['first_name'].disabled = True
+        self.fields['last_name'].disabled = True
+        self.fields['employee_id'].disabled = True
+        self.fields['date_of_hire'].disabled = True
+        self.fields['days_off_left'].disabled = True
+
+
+class EditEmployeeForm(EditEmployeeBaseForm):
+
+    class Meta(EditEmployeeBaseForm.Meta):
+        model = Employee
+
+class EditManagerBaseForm(EditEmployeeBaseForm):
+    class Meta(EditEmployeeBaseForm.Meta):
+        model = Manager
+
+
+class EditHRBaseForm(EditEmployeeBaseForm):
+    class Meta(EditEmployeeBaseForm.Meta):
+        model = HR
+
+
+
 
 # class ProfileUpdateForm(forms.ModelForm):
 #     def __init__(self, *args, **kwargs):

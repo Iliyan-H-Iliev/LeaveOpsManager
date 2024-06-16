@@ -1,0 +1,43 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+    <h1>Company Members</h1>
+
+{% if company %}
+    <p>Username: {{ user_profile.company.company_name }}</p>
+    <!-- Display company details -->
+    {% if company %}
+        <h2>Company: {{ company.company_name }}</h2>
+    {% endif %}
+
+    <!-- Display HRs related to the company -->
+    {% if hrs %}
+        <h3>HRs</h3>
+        <ul>
+            {% for hr in hrs %}
+                <li>{{ hr.full_name }}</li><a href="{% url 'full profile update' slug=hr.slug %}">Edit</a>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <!-- Display Managers related to the company -->
+    {% if managers %}
+        <h3>Managers</h3>
+        <ul>
+            {% for manager in managers %}
+                <li>{{ manager.full_name }}</li><a href="{% url 'full profile update' slug=manager.slug %}">Edit</a>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <!-- Display Employees related to the company -->
+    {% if employees %}
+        <h3>Employees</h3>
+        <ul>
+            {% for employee in employees %}
+                <li>{{ employee.full_name }}</li><a href="{% url 'full profile update' slug=employee.slug %}">Edit</a>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endif %}
+{% endblock %}

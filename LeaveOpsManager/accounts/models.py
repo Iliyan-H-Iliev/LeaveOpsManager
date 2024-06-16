@@ -282,7 +282,7 @@ class Employee(EmployeeProfileBase):
         related_name="employees",
     )
 
-    user = models.ForeignKey(
+    user = models.OneToOneField(
         LeaveOpsManagerUser,
         on_delete=models.CASCADE,
         related_name="employee",

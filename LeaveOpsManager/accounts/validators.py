@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.utils import timezone
 from datetime import date
 from dateutil.relativedelta import relativedelta
@@ -12,4 +13,17 @@ def validate_date_of_hire(value):
 def validate_date_of_birth(value):
     sixteen_years_ago = timezone.now().date() - relativedelta(years=16)
     if value < date(1940, 1, 1) or value > sixteen_years_ago:
-        raise ValidationError(f"The date of birth must be between 01/01/1940 and {sixteen_years_ago.strftime('%m/%d/%Y')}.")
+        raise ValidationError(
+            f"The date of birth must be between 01/01/1940 and {sixteen_years_ago.strftime('%m/%d/%Y')}.")
+
+
+def phone_number_validator(value):
+    asd = value.isdigit()
+    if not value.isdigit():
+        raise ValidationError("Phone number must contain only digits.")
+
+
+phone_regex = RegexValidator(
+        regex=r'^\d+$',
+        message="Phone number must be entered in the format: '999999999'. Up to 15 digits allowed."
+    )

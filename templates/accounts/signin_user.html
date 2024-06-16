@@ -1,3 +1,6 @@
+{% extends  "layout.html" %}
+
+{% block content %}
 {% load filters %}
 <form action="{% url 'signin user' %}?next={{ next }}" method="post">
                 {{ form.as_p }}
@@ -5,3 +8,5 @@
 
                 {% csrf_token %}
             </form>
+
+{% endblock %}

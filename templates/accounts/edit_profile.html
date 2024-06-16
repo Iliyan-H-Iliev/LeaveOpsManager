@@ -5,10 +5,12 @@
 {% load filters %}
 
 <form action="{% url 'edit profile'  slug=user.slug %}" method="post" enctype="multipart/form-data">
-    {{ user_form.as_p }}
+    <table>
+    {{ user_form.as_table }}
     {% if additional_form %}
-      {{ additional_form.as_p }}
+      {{ additional_form.as_table }}
     {% endif %}
+    </table>
     <button type="submit">Save</button>
     {% csrf_token %}
 </form>

@@ -1,15 +1,16 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-    {% if user.is_authenticated %}
-        <h2>Профил</h2>
-        <p>Добре дошли, {{ user.user_type }}</p>
-        <p>Имейл: {{ user.email }}</p>
-        <p>Company name: {{ user.company.company_name }}</p>
-        <p>Дата на регистрация: {{ user.first_name }}</p>
-        <p>Последна активност: {{ user.last_name }}</p>
+    {% if messages %}
+{#        <ul class="messages">#}
+{#            {% for message in messages %}#}
+{#                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>#}
+{#            {% endfor %}#}
+{#        </ul>#}
+    {% endif %}
+    {% if full_name %}
+        <p>Welcome, {{ full_name }}!</p>
     {% else %}
-        <h2>Профил</h2>
-        <p>Моля, влезте в профила си</p>
+        <p>Welcome, guest!</p>
     {% endif %}
 {% endblock %}
