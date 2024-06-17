@@ -8,31 +8,16 @@ class Command(BaseCommand):
     help = "Create user groups and assign permissions"
 
     def handle(self, *args, **options):
+        # Create groups
         company_group, created = Group.objects.get_or_create(name="Company")
         hr_group, created = Group.objects.get_or_create(name="HR")
         manager_group, created = Group.objects.get_or_create(name="Manager")
         employee_group, created = Group.objects.get_or_create(name="Employee")
 
-        # Assign each group to its respective model
-        for company in Company.objects.all():
-            company.group = company_group
-            company.save()
-
-        for hr in HR.objects.all():
-            hr.group = hr_group
-            hr.save()
-
-        for manager in Manager.objects.all():
-            manager.group = manager_group
-            manager.save()
-
-        for employee in Employee.objects.all():
-            employee.group = employee_group
-            employee.save()
-
+        # Fetch permissions
         company_permissions = Permission.objects.filter(
             codename__in=[
-                "can_change_company"
+                "can_change_company",
                 "can_delete_company",
                 "can_view_company",
                 "can_add_user",
@@ -51,7 +36,9 @@ class Command(BaseCommand):
                 "can_change_employee",
                 "can_delete_employee",
                 "can_view_employee",
-            ])
+            ]
+        )
+
         hr_permissions = Permission.objects.filter(
             codename__in=[
                 "can_add_user",
@@ -70,18 +57,36 @@ class Command(BaseCommand):
                 "can_change_employee",
                 "can_delete_employee",
                 "can_view_employee",
-            ])
-        manager_permissions = [
-            "can_change_employee",
-            "can_view_employee",
-        ]
-        employee_permissions = [
-            "can_view_employee",
-        ]
+            ]
+        )
 
+        manager_permissions = Permission.objects.filter(
+            codename__in=[
+                "can_change_employee",
+                "can_view_employee",
+            ]
+        )
+
+        employee_permissions = Permission.objects.filter(
+            codename__in=[
+                "can_view_employee",
+            ]
+        )
+
+        # Assign permissions to groups
         company_group.permissions.set(company_permissions)
         hr_group.permissions.set(hr_permissions)
         manager_group.permissions.set(manager_permissions)
         employee_group.permissions.set(employee_permissions)
+
+        # Assign users to groups
+        for company in Company.objects.all():
+            company.user.groups.add(company_group)
+        for hr in HR.objects.all():
+            hr.user.groups.add(hr_group)
+        for manager in Manager.objects.all():
+            manager.user.groups.add(manager_group)
+        for employee in Employee.objects.all():
+            employee.user.groups.add(employee_group)
 
         self.stdout.write(self.style.SUCCESS("Successfully created groups and assigned permissions"))

@@ -86,3 +86,15 @@ class AddToGroupMixin(models.Model):
         user.save()
 
 
+class UserTypeRelatedInstanceMixin:
+    @staticmethod
+    def _get_related_instance(user):
+        if user.user_type == 'Company':
+            return user.company
+        elif user.user_type == 'HR':
+            return user.hr
+        elif user.user_type == 'Manager':
+            return user.manager
+        elif user.user_type == 'Employee':
+            return user.employee
+        return None

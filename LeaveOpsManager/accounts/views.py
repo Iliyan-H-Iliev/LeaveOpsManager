@@ -1,27 +1,73 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
-from django.db.models import Q
-from django.http import HttpResponse, Http404, HttpResponseRedirect
+from django.contrib.auth.mixins import UserPassesTestMixin
+
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 
 from django.shortcuts import render, redirect
-from django import forms
 
 from django.urls import reverse_lazy, reverse
-from django.utils.decorators import method_decorator
 from django.views import generic as views, View
-from django.contrib.auth import views as auth_views, login, logout, authenticate
+from django.contrib.auth import views as auth_views, login, logout, authenticate, get_user_model
 
-from LeaveOpsManager.accounts.forms import SignupEmployeeForm, SignupCompanyForm, EditManagerBaseForm, \
-    EditLeaveOpsManagerUserEditForm, EditHRBaseForm, EditEmployeeBaseForm, EditCompanyForm
-from LeaveOpsManager.accounts.models import LeaveOpsManagerUser, Company, HR, Manager, Employee
+from LeaveOpsManager.accounts.forms import SignupEmployeeForm, SignupCompanyForm, PartialPartialEditManagerForm, \
+    PartialEditLeaveOpsManagerUserEditForm, PartialPartialEditHRForm, PartialEditEmployeeForm, EditCompanyForm
+from LeaveOpsManager.accounts.mixins import UserTypeRelatedInstanceMixin
+from LeaveOpsManager.accounts.models import Company, HR, Manager, Employee
 
 import logging
 
 from LeaveOpsManager.accounts.utils import get_user_by_slug
+from LeaveOpsManager.accounts.view_mixins import UserGroupRequiredMixin
 
 logger = logging.getLogger(__name__)
+
+UserModel = get_user_model()
+
+
+# class UserGroupRequiredMixin(UserPassesTestMixin):
+#     allowed_groups = []
+#
+#     def test_func(self):
+#         return (
+#                 self.request.user.is_authenticated and
+#                 self.request.user.groups.filter(name__in=self.allowed_groups).exists()
+#         )
+#
+#     def handle_no_permission(self):
+#         if not self.request.user.is_authenticated:
+#             messages.info(self.request, "You are not authorized to access this page.")
+#             return redirect('login')
+#         else:
+#             messages.error(self.request, "Only HR and Company users can register employees.")
+#             return redirect('index')
+
+
+
+class IndexView(views.TemplateView):
+    template_name = "index.html"
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        if not user.is_authenticated:
+            # messages.info(request, "Please log in to access full features of this page.")
+            return render(request, self.template_name)
+
+        # Dictionary to map user types to their respective name attributes
+        user_type_map = {
+            'Company': lambda u: u.company.name,
+            'Manager': lambda u: u.manager.full_name,
+            'HR': lambda u: u.hr.full_name,
+            'Employee': lambda u: u.employee.full_name,
+        }
+
+        # Default to None if user type is not found
+        full_name = user_type_map.get(user.user_type, lambda u: None)(user) if user.user_type else None
+
+        return render(request, self.template_name, {
+            'full_name': full_name,
+        })
 
 
 class SignupCompanyView(views.CreateView):
@@ -56,45 +102,24 @@ class SignupCompanyView(views.CreateView):
             return reverse('signin user')
 
 
-class SignupEmployeeView(views.CreateView):
+class SignupEmployeeView(UserGroupRequiredMixin, views.CreateView):
     template_name = 'accounts/register_employee.html'
     form_class = SignupEmployeeForm
 
     # TODO: replace 'success_url' with the actual URL name
     success_url = reverse_lazy("index")
+    allowed_groups = ['HR', 'Company']
 
-    def get(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            messages.info(request, "You are not authorized to access this page.")
-            return redirect('login')  # Redirect to the login page
-
-        if request.user.user_type not in ["HR", "Company"]:
-            messages.error(request, "Only HR and Company users can register employees.")
-            return redirect('index')  # Redirect to the home page or any other page
-
-        return super().get(request, *args, **kwargs)
-
-    # def form_valid(self, form):
-    #     employee = form.save(commit=False)
-    #     manager_id = form.cleaned_data.get('managed_by')
-    #     manager = get_object_or_404(EmployeeProfileBase, id=manager_id)
-    #     employee.company = manager.company
-    #     employee.save()
-    #     return HttpResponse("Employee registered successfully", status=201)
-    #
-    # def form_invalid(self, form):
-    #     return HttpResponse("Form is not valid", status=400)
-    #
     # def get(self, request, *args, **kwargs):
-    #     form = RegistrationEmployeeForm(request.POST or None, request=request)
-    #     return render(request, self.template_name, {'form': form})
+    #     if not request.user.is_authenticated:
+    #         messages.info(request, "You are not authorized to access this page.")
+    #         return redirect('login')  # Redirect to the login page
     #
-    # def post(self, request, *args, **kwargs):
-    #     form = RegistrationEmployeeForm(request.POST or None, request=request)
-    #     if form.is_valid():
-    #         return self.form_valid(form)
-    #     else:
-    #         return self.form_invalid(form)
+    #     if request.user.user_type not in ["HR", "Company"]:
+    #         messages.error(request, "Only HR and Company users can register employees.")
+    #         return redirect('index')  # Redirect to the home page or any other page
+    #
+    #     return super().get(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -105,7 +130,7 @@ class SignupEmployeeView(views.CreateView):
 
 
 class ProfileDetailsView(views.DetailView):
-    model = LeaveOpsManagerUser
+    model = UserModel
     template_name = "accounts/details_profile.html"
     context_object_name = 'user_profile'
 
@@ -167,21 +192,23 @@ class SignInUserView(auth_views.LoginView):
         return super().form_invalid(form)
 
 
-class ProfileUpdateView(View):
+class ProfileUpdateView(View, UserTypeRelatedInstanceMixin):
+
+    form_mapping = {
+        'Manager': PartialPartialEditManagerForm,
+        'HR': PartialPartialEditHRForm,
+        'Employee': PartialEditEmployeeForm,
+        'Company': EditCompanyForm,
+    }
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        user_form = EditLeaveOpsManagerUserEditForm(instance=user)
-        additional_form = None
+        user_form = PartialEditLeaveOpsManagerUserEditForm(instance=user)
+        additional_form = self.form_mapping.get(user.user_type, None)
 
-        if user.user_type == 'Manager':
-            additional_form = EditManagerBaseForm(instance=user.manager)
-        elif user.user_type == 'HR':
-            additional_form = EditHRBaseForm(instance=user.hr)
-        elif user.user_type == 'Employee':
-            additional_form = EditEmployeeBaseForm(instance=user.employee)
-        elif user.user_type == 'Company':
-            additional_form = EditCompanyForm(instance=user.company)
+        if additional_form:
+            related_instance = self._get_related_instance(user)
+            additional_form = additional_form(instance=related_instance)
 
         return render(request, 'accounts/edit_profile.html', {
             'user_form': user_form,
@@ -190,17 +217,12 @@ class ProfileUpdateView(View):
 
     def post(self, request, *args, **kwargs):
         user = request.user
-        user_form = EditLeaveOpsManagerUserEditForm(request.POST, instance=user)
-        additional_form = None
+        user_form = PartialEditLeaveOpsManagerUserEditForm(request.POST, instance=user)
+        additional_form = self.form_mapping.get(user.user_type, None)
 
-        if user.user_type == 'Manager':
-            additional_form = EditManagerBaseForm(request.POST, instance=user.manager)
-        elif user.user_type == 'HR':
-            additional_form = EditHRBaseForm(request.POST, instance=user.hr)
-        elif user.user_type == 'Employee':
-            additional_form = EditEmployeeBaseForm(request.POST, instance=user.employee)
-        elif user.user_type == 'Company':
-            additional_form = EditCompanyForm(request.POST, instance=user.company)
+        if additional_form:
+            related_instance = self._get_related_instance(user)
+            additional_form = additional_form(request.POST, instance=related_instance)
 
         if user_form.is_valid() and (additional_form is None or additional_form.is_valid()):
             user_form.save()
@@ -208,7 +230,7 @@ class ProfileUpdateView(View):
                 additional_form.save()
             return redirect('profile', slug=user.slug)
 
-        return render(request, 'accounts/details_profile.html', {
+        return render(request, 'accounts/edit_profile.html', {
             'user_form': user_form,
             'additional_form': additional_form,
         })
@@ -218,7 +240,7 @@ class FullProfileUpdateView(View):
 
     def get_object(self, queryset=None):
         user_slug = self.kwargs['slug']  # Assume the URL contains the user ID
-        return get_object_or_404(LeaveOpsManagerUser, slug=user_slug)
+        return get_object_or_404(UserModel, slug=user_slug)
 
     def get(self, request, *args, **kwargs):
         slug = self.kwargs['slug']
@@ -229,15 +251,15 @@ class FullProfileUpdateView(View):
             messages.error(request, "Only HR and Company users can edit profiles.")
             return redirect('index')
 
-        user_form = EditLeaveOpsManagerUserEditForm(instance=user_to_edit)
+        user_form = PartialEditLeaveOpsManagerUserEditForm(instance=user_to_edit)
         additional_form = None
 
         if user_to_edit.user_type == 'Manager':
-            additional_form = EditManagerBaseForm(instance=user_to_edit.manager)
+            additional_form = PartialPartialEditManagerForm(instance=user_to_edit.manager)
         elif user_to_edit.user_type == 'HR':
-            additional_form = EditHRBaseForm(instance=user_to_edit.hr)
+            additional_form = PartialPartialEditHRForm(instance=user_to_edit.hr)
         elif user_to_edit.user_type == 'Employee':
-            additional_form = EditEmployeeBaseForm(instance=user_to_edit.employee)
+            additional_form = PartialEditEmployeeForm(instance=user_to_edit.employee)
         elif user_to_edit.user_type == 'Company':
             additional_form = EditCompanyForm(instance=user_to_edit.company)
 
@@ -261,15 +283,15 @@ class FullProfileUpdateView(View):
             messages.error(request, "Only HR and Company users can edit profiles.")
             return redirect('index')
 
-        user_form = EditLeaveOpsManagerUserEditForm(request.POST or None, instance=user_to_edit)
+        user_form = PartialEditLeaveOpsManagerUserEditForm(request.POST or None, instance=user_to_edit)
         additional_form = None
 
         if user_to_edit.user_type == 'Manager':
-            additional_form = EditManagerBaseForm(request.POST, instance=user_to_edit.manager)
+            additional_form = PartialPartialEditManagerForm(request.POST, instance=user_to_edit.manager)
         elif user_to_edit.user_type == 'HR':
-            additional_form = EditHRBaseForm(request.POST, instance=user_to_edit.hr)
+            additional_form = PartialPartialEditHRForm(request.POST, instance=user_to_edit.hr)
         elif user_to_edit.user_type == 'Employee':
-            additional_form = EditEmployeeBaseForm(request.POST, instance=user_to_edit.employee)
+            additional_form = PartialEditEmployeeForm(request.POST, instance=user_to_edit.employee)
         elif user_to_edit.user_type == 'Company':
             additional_form = EditCompanyForm(request.POST, instance=user_to_edit.company)
 
@@ -294,34 +316,11 @@ def signout_user(request):
     return redirect('index')
 
 
-class IndexView(views.TemplateView):
-    template_name = "index.html"
 
-    def get(self, request, *args, **kwargs):
-        user = request.user
-
-        if not user.is_authenticated:
-            # messages.info(request, "Please log in to access full features of this page.")
-            return render(request, self.template_name)
-
-        # Dictionary to map user types to their respective name attributes
-        user_type_map = {
-            'Company': lambda u: u.company.name,
-            'Manager': lambda u: u.manager.full_name,
-            'HR': lambda u: u.hr.full_name,
-            'Employee': lambda u: u.employee.full_name,
-        }
-
-        # Default to None if user type is not found
-        full_name = user_type_map.get(user.user_type, lambda u: None)(user) if user.user_type else None
-
-        return render(request, self.template_name, {
-            'full_name': full_name,
-        })
 
 
 class CompanyMembersView(views.DetailView):
-    model = LeaveOpsManagerUser
+    model = UserModel
     template_name = "accounts/company_members.html"
     context_object_name = 'company_members'
 

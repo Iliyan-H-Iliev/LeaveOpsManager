@@ -1,11 +1,14 @@
 from django.contrib import admin
+from django.contrib.auth import get_user_model
 
-from LeaveOpsManager.accounts.models import LeaveOpsManagerUser, Company, Manager, Employee, HR
+from LeaveOpsManager.accounts.models import Company, Manager, Employee, HR
+
+UserModel = get_user_model()
 
 
 # Register your models here.
-@admin.register(LeaveOpsManagerUser)
-class LeaveOpsManagerUserAdmin(admin.ModelAdmin):
+@admin.register(UserModel)
+class UserModelAdmin(admin.ModelAdmin):
 
     list_display = [
         'email',
@@ -23,6 +26,7 @@ class LeaveOpsManagerUserAdmin(admin.ModelAdmin):
         'is_staff',
         'is_active',
     ]
+
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
@@ -41,6 +45,7 @@ class CompanyAdmin(admin.ModelAdmin):
         'company_name',
         'user',
     ]
+
 
 @admin.register(Manager)
 class ManagerAdmin(admin.ModelAdmin):

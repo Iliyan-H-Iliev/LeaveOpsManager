@@ -1,14 +1,10 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm
-from django.utils.crypto import get_random_string
-from django.utils.text import slugify
+from django.contrib.auth.forms import UserCreationForm
 
 from django.utils.timezone import now
 
-from django.contrib.auth.models import Group
-
-from .models import EmployeeProfileBase, Company, Manager, HR, Employee, LeaveOpsManagerUser
+from .models import EmployeeProfileBase, Company, Manager, HR, Employee
 
 UserModel = get_user_model()
 
@@ -202,6 +198,7 @@ class SignupEmployeeForm(UserCreationForm):
 
         if commit:
             employee.save()
+            # TODO Send Email
             #
             # # Send email to user with link to reset password and login
             # reset_password_url = self.request.build_absolute_uri(
@@ -218,13 +215,10 @@ class SignupEmployeeForm(UserCreationForm):
         return user
 
 
-class EditLeaveOpsManagerUserEditForm(forms.ModelForm):
+class PartialEditLeaveOpsManagerUserEditForm(forms.ModelForm):
     class Meta:
-        model = LeaveOpsManagerUser
+        model = UserModel
         fields = ['email']
-
-    def __init__(self, *args, **kwargs):
-        super(EditLeaveOpsManagerUserEditForm, self).__init__(*args, **kwargs)
 
 
 class EditCompanyForm(forms.ModelForm):
@@ -233,7 +227,7 @@ class EditCompanyForm(forms.ModelForm):
         fields = ["company_name"]
 
 
-class EditEmployeeBaseForm(forms.ModelForm):
+class PartialEditEmployeeForm(forms.ModelForm):
     class Meta:
         model = Employee
         fields = [
@@ -250,7 +244,7 @@ class EditEmployeeBaseForm(forms.ModelForm):
         ]  # Add other fields you want to edit
 
     def __init__(self, *args, **kwargs):
-        super(EditEmployeeBaseForm, self).__init__(*args, **kwargs)
+        super(PartialEditEmployeeForm, self).__init__(*args, **kwargs)
         self.fields['managed_by'].disabled = True
         self.fields['first_name'].disabled = True
         self.fields['last_name'].disabled = True
@@ -259,52 +253,28 @@ class EditEmployeeBaseForm(forms.ModelForm):
         self.fields['days_off_left'].disabled = True
 
 
-class EditEmployeeForm(EditEmployeeBaseForm):
-
-    class Meta(EditEmployeeBaseForm.Meta):
-        model = Employee
-
-class EditManagerBaseForm(EditEmployeeBaseForm):
-    class Meta(EditEmployeeBaseForm.Meta):
+class PartialPartialEditManagerForm(PartialEditEmployeeForm):
+    class Meta(PartialEditEmployeeForm.Meta):
         model = Manager
 
 
-class EditHRBaseForm(EditEmployeeBaseForm):
-    class Meta(EditEmployeeBaseForm.Meta):
+class PartialPartialEditHRForm(PartialEditEmployeeForm):
+    class Meta(PartialEditEmployeeForm.Meta):
         model = HR
 
 
+class FullEditLeaveOpsManagerUserEditForm(PartialEditLeaveOpsManagerUserEditForm):
+    class Meta:
+        fields = PartialEditLeaveOpsManagerUserEditForm.Meta.fields + ['is_active']
 
 
-# class ProfileUpdateForm(forms.ModelForm):
-#     def __init__(self, *args, **kwargs):
-#         super(ProfileUpdateForm, self).__init__(*args, **kwargs)
-#         self.user_form = EditLeaveOpsManagerUserEditForm(*args, **kwargs)
-#         self.manager_form = EditManagerForm(*args, **kwargs)
-#         self.hr_form = EditHRForm(*args, **kwargs)
-#         self.employee_form = EditEmployeeForm(*args, **kwargs)
-#
-#     def is_valid(self):
-#         return (
-#                 self.user_form.is_valid() and
-#                 self.manager_form.is_valid() and
-#                 self.hr_form.is_valid() and
-#                 self.employee_form.is_valid()
-#                 )
-#
-#     def save(self, commit=True):
-#         user = self.user_form.save(commit=False)
-#         manager = self.manager_form.save(commit=False)
-#         hr = self.hr_form.save(commit=False)
-#         employee = self.employee_form.save(commit=False)
-#
-#         if commit:
-#             user.save()
-#             manager.user = user
-#             manager.save()
-#             hr.user = user
-#             hr.save()
-#             employee.user = user
-#             employee.save()
-#
-#         return user, manager, hr, employee
+class FullEditEmployeeForm(PartialEditEmployeeForm):
+    def __init__(self, *args, **kwargs):
+        super(PartialEditEmployeeForm, self).__init__(*args, **kwargs)
+        self.fields['managed_by'].disabled = False
+        self.fields['first_name'].disabled = False
+        self.fields['last_name'].disabled = False
+        self.fields['employee_id'].disabled = False
+        self.fields['date_of_hire'].disabled = False
+        self.fields['days_off_left'].disabled = False
+

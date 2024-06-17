@@ -10,7 +10,7 @@ from django.apps import apps
 from django.utils import timezone
 
 from LeaveOpsManager.accounts.mixins import UserTypeMixin, AddToGroupMixin, AbstractSlugMixin
-from LeaveOpsManager.accounts.validators import validate_date_of_hire, phone_number_validator, phone_regex
+from LeaveOpsManager.accounts.validators import validate_date_of_hire, phone_number_validator
 
 
 class EmployeeProfileBase(UserTypeMixin,AbstractSlugMixin, AddToGroupMixin, models.Model):
