@@ -11,37 +11,19 @@ from django.views import generic as views, View
 from django.contrib.auth import views as auth_views, login, logout, authenticate, get_user_model
 
 from LeaveOpsManager.accounts.forms import SignupEmployeeForm, SignupCompanyForm, PartialPartialEditManagerForm, \
-    PartialEditLeaveOpsManagerUserEditForm, PartialPartialEditHRForm, PartialEditEmployeeForm, EditCompanyForm
+    PartialEditLeaveOpsManagerUserEditForm, PartialPartialEditHRForm, PartialEditEmployeeForm, EditCompanyForm, \
+    FullEditManagerForm, FullEditHRForm, FullEditEmployeeForm, FullEditLeaveOpsManagerUserEditForm
 from LeaveOpsManager.accounts.mixins import UserTypeRelatedInstanceMixin
 from LeaveOpsManager.accounts.models import Company, HR, Manager, Employee
 
 import logging
 
 from LeaveOpsManager.accounts.utils import get_user_by_slug
-from LeaveOpsManager.accounts.view_mixins import UserGroupRequiredMixin
+from LeaveOpsManager.accounts.view_mixins import UserGroupRequiredMixin, CompanyContextMixin, OwnerRequiredMixin
 
 logger = logging.getLogger(__name__)
 
 UserModel = get_user_model()
-
-
-# class UserGroupRequiredMixin(UserPassesTestMixin):
-#     allowed_groups = []
-#
-#     def test_func(self):
-#         return (
-#                 self.request.user.is_authenticated and
-#                 self.request.user.groups.filter(name__in=self.allowed_groups).exists()
-#         )
-#
-#     def handle_no_permission(self):
-#         if not self.request.user.is_authenticated:
-#             messages.info(self.request, "You are not authorized to access this page.")
-#             return redirect('login')
-#         else:
-#             messages.error(self.request, "Only HR and Company users can register employees.")
-#             return redirect('index')
-
 
 
 class IndexView(views.TemplateView):
@@ -56,7 +38,7 @@ class IndexView(views.TemplateView):
 
         # Dictionary to map user types to their respective name attributes
         user_type_map = {
-            'Company': lambda u: u.company.name,
+            'Company': lambda u: u.company.company_name,
             'Manager': lambda u: u.manager.full_name,
             'HR': lambda u: u.hr.full_name,
             'Employee': lambda u: u.employee.full_name,
@@ -129,36 +111,36 @@ class SignupEmployeeView(UserGroupRequiredMixin, views.CreateView):
     # remaining code...
 
 
-class ProfileDetailsView(views.DetailView):
+class ProfileDetailsView(OwnerRequiredMixin, views.DetailView):
     model = UserModel
     template_name = "accounts/details_profile.html"
     context_object_name = 'user_profile'
 
     # TODO: CHECK IF THIS IS THE RIGHT WAY TO FETCH RELATED MODELS FOR THE USER PROFILE
-    def get_queryset(self):
-        return super().get_queryset().prefetch_related(
-            'company__hr_set',  # Prefetch HR instances related to the company
-            'company__manager_set',  # Prefetch Manager instances related to the company
-            'company__employee_set'  # Prefetch Employee instances related to the company
-        )
+    # def get_queryset(self):
+    #     return super().get_queryset().prefetch_related(
+    #         'company__hr_set',  # Prefetch HR instances related to the company
+    #         'company__manager_set',  # Prefetch Manager instances related to the company
+    #         'company__employee_set'  # Prefetch Employee instances related to the company
+    #     )
 
     def get_object(self, queryset=None):
         slug = self.kwargs.get('slug')
         return get_user_by_slug(slug)
 
     # TODO check if this is the right way to fetch related models for the user profile
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.object
-
-        company = user.get_company
-
-        context['company'] = company if company else None
-        context['hrs'] = HR.objects.filter(company=company) if company else None
-        context['managers'] = Manager.objects.filter(company=company) if company else None
-        context['employees'] = Employee.objects.filter(company=company) if company else None
-
-        return context
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     user = self.object
+    #
+    #     company = user.get_company
+    #
+    #     context['company'] = company if company else None
+    #     context['hrs'] = HR.objects.filter(company=company) if company else None
+    #     context['managers'] = Manager.objects.filter(company=company) if company else None
+    #     context['employees'] = Employee.objects.filter(company=company) if company else None
+    #
+    #     return context
 
 
 class SignInUserView(auth_views.LoginView):
@@ -246,20 +228,21 @@ class FullProfileUpdateView(View):
         slug = self.kwargs['slug']
         user = self.request.user
         user_to_edit = get_user_by_slug(slug)
+        company_name = user.get_company_name
 
         if user.user_type not in ["HR", "Company"]:
             messages.error(request, "Only HR and Company users can edit profiles.")
             return redirect('index')
 
-        user_form = PartialEditLeaveOpsManagerUserEditForm(instance=user_to_edit)
+        user_form = FullEditLeaveOpsManagerUserEditForm(instance=user_to_edit)
         additional_form = None
 
         if user_to_edit.user_type == 'Manager':
-            additional_form = PartialPartialEditManagerForm(instance=user_to_edit.manager)
+            additional_form = FullEditManagerForm(instance=user_to_edit.manager)
         elif user_to_edit.user_type == 'HR':
-            additional_form = PartialPartialEditHRForm(instance=user_to_edit.hr)
+            additional_form = FullEditHRForm(instance=user_to_edit.hr)
         elif user_to_edit.user_type == 'Employee':
-            additional_form = PartialEditEmployeeForm(instance=user_to_edit.employee)
+            additional_form = FullEditEmployeeForm(instance=user_to_edit.employee)
         elif user_to_edit.user_type == 'Company':
             additional_form = EditCompanyForm(instance=user_to_edit.company)
 
@@ -267,7 +250,8 @@ class FullProfileUpdateView(View):
             'user_form': user_form,
             'additional_form': additional_form,
             "user": user,
-            "user_to_edit": user_to_edit
+            "user_to_edit": user_to_edit,
+            "company_name": company_name,
         })
 
     def post(self, request, *args, **kwargs):
@@ -316,10 +300,7 @@ def signout_user(request):
     return redirect('index')
 
 
-
-
-
-class CompanyMembersView(views.DetailView):
+class CompanyMembersView(CompanyContextMixin, views.DetailView):
     model = UserModel
     template_name = "accounts/company_members.html"
     context_object_name = 'company_members'
@@ -345,14 +326,35 @@ class CompanyMembersView(views.DetailView):
 
         return company
 
-    # TODO check if this is the right way to fetch related models for the user profile
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        company = self.object
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        company = user.get_company
+        company_name = company.company_name
 
-        context['company'] = company if company else None
-        context['hrs'] = HR.objects.filter(company=company) if company else None
-        context['managers'] = Manager.objects.filter(company=company) if company else None
-        context['employees'] = Employee.objects.filter(company=company) if company else None
+        if user.user_type not in ["HR", "Company"]:
+            messages.error(request, "Only HR and Company users can view company members.")
+            return redirect('index')
 
-        return context
+        if not company:
+            messages.error(request, "User does not belong to any company.")
+            return redirect('index')
+
+        return render(request, self.template_name, {
+            'company': company,
+            'company_name': company_name,
+            'hrs': HR.objects.filter(company=company),
+            'managers': Manager.objects.filter(company=company),
+            'employees': Employee.objects.filter(company=company),
+        })
+
+    # # TODO check if this is the right way to fetch related models for the user profile
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     company = self.object
+    #
+    #     context['company'] = company if company else None
+    #     context['hrs'] = HR.objects.filter(company=company) if company else None
+    #     context['managers'] = Manager.objects.filter(company=company) if company else None
+    #     context['employees'] = Employee.objects.filter(company=company) if company else None
+    #
+    #     return context

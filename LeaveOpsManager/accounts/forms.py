@@ -8,9 +8,18 @@ from .models import EmployeeProfileBase, Company, Manager, HR, Employee
 
 UserModel = get_user_model()
 
+employee_edit_fields = [
+    'first_name',
+    'last_name',
+    'employee_id',
+    'managed_by',
+    'date_of_hire',
+    'days_off_left',
+    "phone_number",
+    "address", "date_of_birth",
+    "profile_picture",
+]
 user_edit_fields = ['email']
-employee_edit_fields = ['first_name', 'last_name', 'employee_id', 'managed_by', 'date_of_hire', 'days_off_left',
-                        "phone_number", "address", "date_of_birth", "profile_picture"]
 company_edit_fields = ['company_name']
 
 
@@ -221,6 +230,7 @@ class PartialEditLeaveOpsManagerUserEditForm(forms.ModelForm):
         fields = ['email']
 
 
+# TODO only company can edit company name and company email
 class EditCompanyForm(forms.ModelForm):
     class Meta:
         model = Company
@@ -265,16 +275,23 @@ class PartialPartialEditHRForm(PartialEditEmployeeForm):
 
 class FullEditLeaveOpsManagerUserEditForm(PartialEditLeaveOpsManagerUserEditForm):
     class Meta:
+        model = UserModel
         fields = PartialEditLeaveOpsManagerUserEditForm.Meta.fields + ['is_active']
 
 
 class FullEditEmployeeForm(PartialEditEmployeeForm):
     def __init__(self, *args, **kwargs):
         super(PartialEditEmployeeForm, self).__init__(*args, **kwargs)
-        self.fields['managed_by'].disabled = False
-        self.fields['first_name'].disabled = False
-        self.fields['last_name'].disabled = False
-        self.fields['employee_id'].disabled = False
-        self.fields['date_of_hire'].disabled = False
-        self.fields['days_off_left'].disabled = False
+        for field in self.fields:
+            self.fields[field].disabled = False
 
+
+class FullEditHRForm(FullEditEmployeeForm):
+    class Meta(FullEditEmployeeForm.Meta):
+        model = HR
+
+
+class FullEditManagerForm(FullEditEmployeeForm):
+    class Meta(FullEditEmployeeForm.Meta):
+        model = Manager
+        fields = FullEditEmployeeForm.Meta.fields + ["manages_team"]

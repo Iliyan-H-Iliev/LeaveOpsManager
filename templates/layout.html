@@ -38,7 +38,7 @@
                  <a href="{% url 'register employee' %}">Employee</a>
                  <a href="{% url 'edit profile' slug=user.slug %}">Edit</a>
                  <a href="{% url 'signout user' %}">Logout</a>
-                 <a href="{% url 'company members' %}">Company Members</a>
+                 <a href="{% url 'company members' company_name=user.get_company_name %}">Company Members</a>
              {% endif %}
 
                  

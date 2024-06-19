@@ -17,6 +17,6 @@ urlpatterns = [
     path("profile/edit/<slug:slug>/", ProfileUpdateView.as_view(), name="edit profile"),
     path("password_reset/", auth_views.PasswordResetView.as_view(), name="password_reset"),
     path("password_reset/done/", auth_views.PasswordResetDoneView.as_view(), name="password_reset_done"),
-    path("company-members/", CompanyMembersView.as_view(), name="company members"),
-    path("company-members/<slug:slug>/", FullProfileUpdateView.as_view(), name="full profile update"),
+    path("<str:company_name>/company-members/", CompanyMembersView.as_view(), name="company members"),
+    path("<str:company_name>/company-members/<slug:slug>/", FullProfileUpdateView.as_view(), name="full profile update"),
 ]

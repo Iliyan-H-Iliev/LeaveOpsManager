@@ -41,18 +41,8 @@ class AbstractSlugMixin(models.Model):
         raise NotImplementedError("Subclasses must implement this method")
 
 
-# class OwnerRequiredMixin(AccessMixin):
-#     """Verify that the current user has this profile."""
-#
-#     def _handle_no_permission(self):
-#         obj = super().get_object()
-#
-#         if not self.request.user.is_authenticated or obj.user != self.request.user:
-#             return self.handle_no_permission()
-#
-#     def get(self, *args, **kwargs):
-#         return self._handle_no_permission() or super().get(*args, **kwargs)
-#
+
+
 
 
 class AddToGroupMixin(models.Model):
@@ -89,12 +79,5 @@ class AddToGroupMixin(models.Model):
 class UserTypeRelatedInstanceMixin:
     @staticmethod
     def _get_related_instance(user):
-        if user.user_type == 'Company':
-            return user.company
-        elif user.user_type == 'HR':
-            return user.hr
-        elif user.user_type == 'Manager':
-            return user.manager
-        elif user.user_type == 'Employee':
-            return user.employee
-        return None
+        return user.get_user_related_type
+

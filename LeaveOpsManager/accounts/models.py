@@ -111,7 +111,17 @@ class LeaveOpsManagerUser(auth_models.AbstractBaseUser, auth_models.PermissionsM
 
     @property
     def get_company(self):
-        return self.get_user_company()
+        return self.get_user_company() if self.get_user_company() else None
+
+    @property
+    def get_company_name(self):
+        company = self.get_user_company()
+        return company.company_name if company else None
+
+    @property
+    def get_user_related_type(self):
+        user_type = self.user_type.lower()
+        return getattr(self, user_type, None)
 
     USERNAME_FIELD = "email"
 

@@ -15,7 +15,7 @@
         <h3>HRs</h3>
         <ul>
             {% for hr in hrs %}
-                <li>{{ hr.full_name }}</li><a href="{% url 'full profile update' slug=hr.slug %}">Edit</a>
+                <li>{{ hr.full_name }}</li><a href="{% url 'full profile update' company_name=company.company_name slug=hr.slug %}">Edit</a>
             {% endfor %}
         </ul>
     {% endif %}
@@ -25,7 +25,7 @@
         <h3>Managers</h3>
         <ul>
             {% for manager in managers %}
-                <li>{{ manager.full_name }}</li><a href="{% url 'full profile update' slug=manager.slug %}">Edit</a>
+                <li>{{ manager.full_name }}</li><a href="{% url 'full profile update' company_name=company.company_name slug=manager.slug %}">Edit</a>
             {% endfor %}
         </ul>
     {% endif %}
@@ -35,7 +35,7 @@
         <h3>Employees</h3>
         <ul>
             {% for employee in employees %}
-                <li>{{ employee.full_name }}</li><a href="{% url 'full profile update' slug=employee.slug %}">Edit</a>
+                <li>{{ employee.full_name }}</li><a href="{% url 'full profile update' company_name=company.company_name slug=employee.slug %}">Edit</a>
             {% endfor %}
         </ul>
     {% endif %}
