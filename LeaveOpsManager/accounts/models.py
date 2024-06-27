@@ -13,7 +13,7 @@ from django.utils import timezone
 
 from .managers import LeaveOpsManagerUserManager
 
-from .base_models import EmployeeProfileBase
+from .base_models import EmployeeProfileBase, CreatedModifiedMixin
 from LeaveOpsManager.accounts.mixins import UserTypeMixin, AddToGroupMixin, AbstractSlugMixin
 
 user_slug_mapping = {
@@ -132,7 +132,7 @@ class LeaveOpsManagerUser(auth_models.AbstractBaseUser, auth_models.PermissionsM
         verbose_name_plural = 'users'
 
 
-class Company(UserTypeMixin, AbstractSlugMixin, AddToGroupMixin,  models.Model):
+class Company(UserTypeMixin, AbstractSlugMixin, AddToGroupMixin,  CreatedModifiedMixin):
     MAX_COMPANY_NAME_LENGTH = 50
     MIN_COMPANY_NAME_LENGTH = 3
     DEFAULT_DAYS_OFF_PER_YEAR = 0
@@ -182,15 +182,12 @@ class Company(UserTypeMixin, AbstractSlugMixin, AddToGroupMixin,  models.Model):
         return slugify(f"{self.__class__.__name__}-{self.company_name}-{get_random_string(self.RANDOM_STRING_LENGTH)}")
 
     def get_all_hrs(self):
-        # from .models import HR
         return HR.objects.filter(company=self)
 
     def get_all_managers(self):
-        # from .models import Manager
         return Manager.objects.filter(company=self)
 
     def get_all_employees(self):
-        # from .models import Employee
         return Employee.objects.filter(company=self)
 
     def get_all_company_members(self):
@@ -327,3 +324,5 @@ class Employee(EmployeeProfileBase):
     #     self.delete()
     #
     #     return manager
+
+

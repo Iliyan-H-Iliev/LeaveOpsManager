@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Shift Pattern</title>
+</head>
+<body>
+    <h1>Create Shift Pattern</h1>
+    <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    {{ formset.management_form }}
+    {% for form in formset %}
+        {{ form.as_p }}
+        {% if form.instance.pk %}
+            <p>Delete: {{ form.DELETE }}</p>
+        {% endif %}
+    {% endfor %}
+    <button type="submit">Save</button>
+</form>
+</body>
+</html>
+
+{#<!DOCTYPE html>#}
+{#<html>#}
+{#<head>#}
+{#    <title>Create Shift Pattern</title>#}
+{#    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">#}
+{#    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>#}
+{#    <script>#}
+{#        $(document).ready(function() {#}
+{#            $('#add-shiftblock').click(function() {#}
+{#                var form_idx = $('#id_shiftpattern_blocks-TOTAL_FORMS').val();#}
+{#                $('#shiftblock-formset').append($('#empty-form').html().replace(/__prefix__/g, form_idx));#}
+{#                $('#id_shiftpattern_blocks-TOTAL_FORMS').val(parseInt(form_idx) + 1);#}
+{#            });#}
+{#        });#}
+{#    </script>#}
+{#</head>#}
+{#<body>#}
+{#    <h1>Create Shift Pattern</h1>#}
+{#    <form method="post">#}
+{#        {% csrf_token %}#}
+{#        {{ form.as_p }}#}
+{#        <div id="shiftblock-formset">#}
+{#            {% for form in formset %}#}
+{#                <div class="shiftblock-form">#}
+{#                    {{ form.as_p }}#}
+{#                </div>#}
+{#            {% endfor %}#}
+{#        </div>#}
+{#        <button type="button" id="add-shiftblock" class="btn btn-secondary">Add Shift Block</button>#}
+{#        <button type="submit" class="btn btn-primary">Save</button>#}
+{#    </form>#}
+{#    <div id="empty-form" style="display: none;">#}
+{#        <div class="shiftblock-form">#}
+{#            {{ formset.empty_form.as_p }}#}
+{#        </div>#}
+{#    </div>#}
+{#</body>#}
+{#</html>#}

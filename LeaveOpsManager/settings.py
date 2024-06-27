@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'LeaveOpsManager.accounts.apps.AccountsConfig',
+    "LeaveOpsManager.team_management.apps.TeamManagementConfig"
 ]
 
 MIDDLEWARE = [

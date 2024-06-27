@@ -18,12 +18,5 @@ def validate_date_of_birth(value):
 
 
 def phone_number_validator(value):
-    asd = value.isdigit()
     if not value.isdigit():
         raise ValidationError("Phone number must contain only digits.")
-
-
-phone_regex = RegexValidator(
-        regex=r'^\d+$',
-        message="Phone number must be entered in the format: '999999999'. Up to 15 digits allowed."
-    )

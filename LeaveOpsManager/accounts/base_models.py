@@ -13,7 +13,16 @@ from LeaveOpsManager.accounts.mixins import UserTypeMixin, AddToGroupMixin, Abst
 from LeaveOpsManager.accounts.validators import validate_date_of_hire, phone_number_validator
 
 
-class EmployeeProfileBase(UserTypeMixin,AbstractSlugMixin, AddToGroupMixin, models.Model):
+class CreatedModifiedMixin(models.Model):
+
+    class Meta:
+        abstract = True
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)
+
+
+class EmployeeProfileBase(UserTypeMixin, AbstractSlugMixin, AddToGroupMixin, CreatedModifiedMixin):
 
     class Meta:
         abstract = True

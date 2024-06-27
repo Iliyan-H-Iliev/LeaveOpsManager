@@ -20,4 +20,5 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("", include("LeaveOpsManager.accounts.urls")),
+    path("", include("LeaveOpsManager.team_management.urls")),
 ]

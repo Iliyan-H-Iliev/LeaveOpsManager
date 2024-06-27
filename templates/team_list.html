@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teams</title>
+</head>
+<body>
+    <h1>Teams</h1>
+    <ul>
+        {% for team in teams %}
+            <li>{{ team.name }} - Manager: {{ team.manager }} - Shift Pattern: {{ team.shift_pattern }}</li>
+        {% endfor %}
+    </ul>
+    <a href="{% url 'team_create' %}">Create New Team</a>
+</body>
+</html>
