@@ -8,7 +8,7 @@ class ShiftPatternForm(forms.ModelForm):
     # TODO is start_date is on week pattern should start from Monday!!!
     class Meta:
         model = ShiftPattern
-        fields = ['name', 'description', 'rotation_weeks', 'start_date', ]
+        fields = ['name', 'description', 'rotation_weeks', 'start_date',]
 
 
 class ShiftBlockForm(forms.ModelForm):
@@ -42,7 +42,7 @@ class ShiftBlockForm(forms.ModelForm):
 
     class Meta:
         model = ShiftBlock
-        fields = ["selected_days", 'days_on', 'days_off', 'start_time', 'end_time', 'order']
+        fields = ["selected_days", 'days_on', 'days_off', 'start_time', 'end_time', "duration",'order']
 
     def clean(self):
         # TODO debug this
@@ -68,7 +68,7 @@ class ShiftBlockForm(forms.ModelForm):
 ShiftBlockFormSet = forms.inlineformset_factory(
     ShiftPattern, ShiftBlock,
     form=ShiftBlockForm,
-    extra=1,
+    extra=2,
     can_delete=True
 )
 

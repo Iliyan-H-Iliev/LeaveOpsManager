@@ -275,13 +275,7 @@ class HR(EmployeeProfileBase):
 class Employee(EmployeeProfileBase):
     group_name = 'Employee'
 
-    managed_by = models.ForeignKey(
-        Manager,
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-        related_name="manages_employees",
-    )
+
 
     company = models.ForeignKey(
         Company,
@@ -301,6 +295,30 @@ class Employee(EmployeeProfileBase):
         null=True,
         blank=True,
         related_name="employee",
+    )
+
+    shift_pattern = models.ForeignKey(
+        'team_management.ShiftPattern',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="employees",
+    )
+
+    team = models.ForeignKey(
+        'team_management.Team',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="employees",
+    )
+
+    managed_by = models.ForeignKey(
+        Manager,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="manages_employees",
     )
 
 

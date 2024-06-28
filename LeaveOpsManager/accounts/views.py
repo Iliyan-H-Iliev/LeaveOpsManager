@@ -221,6 +221,7 @@ class ProfileUpdateView(View, UserTypeRelatedInstanceMixin):
 class FullProfileUpdateView(View):
 
     def get_object(self, queryset=None):
+        #TODO check where can use it
         user_slug = self.kwargs['slug']  # Assume the URL contains the user ID
         return get_object_or_404(UserModel, slug=user_slug)
 

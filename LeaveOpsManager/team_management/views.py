@@ -17,19 +17,26 @@ class ShiftPatternCreateView(View):
         form = ShiftPatternForm(request.POST)
         formset = ShiftBlockFormSet(request.POST)
         if form.is_valid() and formset.is_valid():
-            shift_pattern = form.save()
+            shift_pattern = form.save(commit=False)
+            shift_pattern.company = request.user.get_company
+            # Check if a ShiftPattern with the same company and name already exists
+            if ShiftPattern.objects.filter(company=shift_pattern.company, name=shift_pattern.name).exists():
+                form.add_error('name', 'Shift pattern with this name already exists for your company.')
+                return render(request, 'shiftpattern_form.html', {'form': form, 'formset': formset})
+            shift_pattern.save()
             shift_blocks = formset.save(commit=False)
             for block in shift_blocks:
                 block.pattern = shift_pattern
                 block.save()
             formset.save_m2m()
+            shift_pattern.generate_shift_working_dates()
             return redirect('shiftpattern_list')
         return render(request, 'shiftpattern_form.html', {'form': form, 'formset': formset})
 
 
 class ShiftPatternListView(View):
     def get(self, request):
-        shift_patterns = ShiftPattern.objects.all()
+        shift_patterns = ShiftPattern.objects.filter(company=request.user.get_company)
         return render(request, 'shiftpattern_list.html', {'shift_patterns': shift_patterns})
 
 

@@ -2,23 +2,47 @@
 <html>
 <head>
     <title>Create Shift Pattern</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <h1>Create Shift Pattern</h1>
     <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    {{ formset.management_form }}
-    {% for form in formset %}
+        {% csrf_token %}
         {{ form.as_p }}
-        {% if form.instance.pk %}
-            <p>Delete: {{ form.DELETE }}</p>
-        {% endif %}
-    {% endfor %}
-    <button type="submit">Save</button>
-</form>
+        <div id="shiftblock-formset">
+            {{ formset.management_form }}
+            {% for form in formset %}
+                <div class="shiftblock-form">
+                    {{ form.as_p }}
+                </div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+    </form>
 </body>
 </html>
+
+{#<!DOCTYPE html>#}
+{#<html>#}
+{#<head>#}
+{#    <title>Create Shift Pattern</title>#}
+{#</head>#}
+{#<body>#}
+{#    <h1>Create Shift Pattern</h1>#}
+{#    <form method="post">#}
+{#    {% csrf_token %}#}
+{#    {{ form.as_p }}#}
+{#    {{ formset.management_form }}#}
+{#    {% for form in formset %}#}
+{#        {{ form.as_p }}#}
+{#        {% if form.instance.pk %}#}
+{#            <p>Delete: {{ form.DELETE }}</p>#}
+{#        {% endif %}#}
+{#    {% endfor %}#}
+{#    <button type="submit">Save</button>#}
+{#</form>#}
+{#</body>#}
+{#</html>#}
 
 {#<!DOCTYPE html>#}
 {#<html>#}
@@ -29,9 +53,9 @@
 {#    <script>#}
 {#        $(document).ready(function() {#}
 {#            $('#add-shiftblock').click(function() {#}
-{#                var form_idx = $('#id_shiftpattern_blocks-TOTAL_FORMS').val();#}
+{#                var form_idx = $('#id_blocks-TOTAL_FORMS').val();#}
 {#                $('#shiftblock-formset').append($('#empty-form').html().replace(/__prefix__/g, form_idx));#}
-{#                $('#id_shiftpattern_blocks-TOTAL_FORMS').val(parseInt(form_idx) + 1);#}
+{#                $('#id_blocks-TOTAL_FORMS').val(parseInt(form_idx) + 1);#}
 {#            });#}
 {#        });#}
 {#    </script>#}
@@ -57,4 +81,3 @@
 {#        </div>#}
 {#    </div>#}
 {#</body>#}
-{#</html>#}

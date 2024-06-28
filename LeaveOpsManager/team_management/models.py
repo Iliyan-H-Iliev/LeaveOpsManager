@@ -2,10 +2,9 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.core.validators import MinValueValidator, MinLengthValidator, MaxValueValidator
 from django.utils import timezone
-from LeaveOpsManager.accounts.models import Manager, Company
+from LeaveOpsManager.accounts.models import Manager, Company, Employee
 from datetime import date, timedelta
-
-
+from django.core.exceptions import ObjectDoesNotExist
 
 
 
@@ -19,7 +18,8 @@ class ShiftPattern(models.Model):
         Company,
         on_delete=models.CASCADE,
         related_name='shift_patterns',
-        null=True,
+        blank=False,
+        null=False,
     )
 
     name = models.CharField(
@@ -50,27 +50,26 @@ class ShiftPattern(models.Model):
         null=False,
     )
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        self.generate_shift_assignments()
-
-    def generate_shift_assignments(self):
-        #TODO check if this is correct  and if it is working
-        end_date = date(date.today().year + 1, 12, 31)
+    def generate_shift_working_dates(self):
+        # end_date = date(date.today().year + 1, 12, 31)
+        days = []
         current_date = self.start_date
+        end_date = current_date + timedelta(days=30)
+        for block in self.blocks.all():
+            block.working_dates.clear()
+            days += block.working_days
+
         while current_date <= end_date:
             for block in self.blocks.all():
-                working_days = block.working_days
-                for i, day in enumerate(working_days):
+                for day in block.working_days:
                     if current_date > end_date:
                         break
                     if day == 1:  # Only create assignments for working days
-                        for team in self.teams.all():
-                            ShiftAssignment.objects.get_or_create(
-                                date=current_date,
-                                shift_block=block,
-                            )
+                        date_obj, created = Date.objects.get_or_create(date=current_date)
+                        block.working_dates.add(date_obj)
                     current_date += timedelta(days=1)
+
+
 
     # rotation_weeks = models.PositiveIntegerField(
     #     default=MIN_ROTATION_WEEKS,
@@ -123,6 +122,12 @@ class ShiftBlock(models.Model):
         null=False,
     )
 
+    working_dates = models.ManyToManyField(
+        'Date',
+        related_name='shift_blocks',
+        blank=True,
+    )
+
     class Meta:
         ordering = ['order']
 
@@ -138,7 +143,6 @@ class ShiftBlock(models.Model):
                 end_datetime += timezone.timedelta(days=1)
             self.duration = end_datetime - start_datetime
         super().save(*args, **kwargs)
-
 
 
 class Team(models.Model):
@@ -180,13 +184,22 @@ class Team(models.Model):
         return self.name
 
 
-class ShiftAssignment(models.Model):
-    date = models.DateField()
-    shift_block = models.ForeignKey(ShiftBlock, on_delete=models.CASCADE, related_name='assignments')
+class Date(models.Model):
+    date = models.DateField(
+        unique=True,
+        blank=False,
+        null=False,
+    )
 
-    class Meta:
-        # TODO make it unique for many companies
-        unique_together = ('date', 'shift_block',)
+# class ShiftAssignment(models.Model):
+#     date = models.DateField()
+#     shift_block = models.ForeignKey(ShiftBlock, on_delete=models.CASCADE, related_name='assignments')
+#
+#     class Meta:
+#         # TODO make it unique for many companies
+#         unique_together = ('date', 'shift_block',)
+#
+#     def __str__(self):
+#         return f"{self.shift_block.pattern.name} - {self.date}"
 
-    def __str__(self):
-        return f"{self.team.name} - {self.shift_block.pattern.name} - {self.date}"
+
